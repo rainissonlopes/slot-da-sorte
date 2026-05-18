@@ -80,8 +80,8 @@ useEffect(() => {
   }
 }, []);
 const fecharPopup = () => {
-  localStorage.setItem("popup-plataforma", "true");
   setMostrarPopup(false);
+  localStorage.setItem("popup-fechado", "true");
 };
   const [busca, setBusca] = useState("");
   const [categoriaAtiva, setCategoriaAtiva] = useState("Todos");
@@ -326,7 +326,7 @@ const fecharPopup = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ backgroundColor: j.cor }}
-                  className="border border-white/10 rounded-[24px] p-2.5 flex flex-col shadow-2xl transition-all hover:scale-[1.03]"
+                  className="border border-white/10 rounded-[24px] p-2 flex flex-col shadow-2xl transition-all hover:scale-[1.03]"
                 >
                   {/* BANNER */}
                   <div className="relative aspect-[4/3.1] rounded-[26px] overflow-hidden mb-4 shadow-lg">
@@ -397,7 +397,7 @@ const fecharPopup = () => {
                     {/* BOX DE APOSTAS */}
                     <div className="bg-black/20 rounded-[24px] p-3 border border-white/5 space-y-3 mt-auto">
                       <p className="text-[#FFC801] text-[10px] font-bold uppercase text-center">
-                        Apostas Sugeridas
+                        Apostas
                       </p>
 
                       {(() => {
@@ -408,11 +408,11 @@ const fecharPopup = () => {
                             <div className="space-y-1 text-[10px] font-black text-white uppercase tracking-tighter">
                               <p className="text-center text-[10px] mb-1 tracking-widest">MÍNIMA</p>
                               <div className="flex justify-between items-center">
-                                <span>Bet Bônus:</span>
+                                <span>Bônus:</span>
                                 <span className="bg-[#22c55e] text-white px-2 py-0.5 rounded-md">{s.bonus}</span>
                               </div>
                               <div className="flex justify-between items-center">
-                                <span>Bet Conexão:</span>
+                                <span>Conexão:</span>
                                 <span className="bg-[#22c55e] text-white px-2 py-0.5 rounded-md">{s.conexao}</span>
                               </div>
                               <div className="flex justify-between items-center">
@@ -496,77 +496,61 @@ const fecharPopup = () => {
           </div>
         </div>
       </footer>
-<motion.div
-  initial={{ opacity: 0, scale: 0.9 }}
-  animate={{ opacity: 1, scale: 1 }}
-  transition={{ duration: 0.35 }}
-  className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-md flex flex-col items-center justify-center px-4"
->
-
-  {/* POPUP */}
-  <div className="w-full max-w-[320px]">
-
-    {/* CARD */}
-    <motion.div
-      animate={{
-        y: [0, -4, 0]
-      }}
-      transition={{
-        repeat: Infinity,
-        duration: 3
-      }}
-      className="relative w-full overflow-hidden rounded-[28px]"
-      style={{ aspectRatio: "9/16" }}
-    >
-
-      <img
-        src="/popup-427win.webp"
-        className="w-full h-full object-cover"
-      />
-
-    </motion.div>
-
-    {/* CHECKBOX */}
-    <label className="flex items-center gap-2 mt-3 mb-3 text-white text-sm px-2">
-
-      <input
-        type="checkbox"
-        onChange={(e) => {
-          if (e.target.checked) {
-            localStorage.setItem("popup-plataforma", "true");
-          } else {
-            localStorage.removeItem("popup-plataforma");
-          }
-        }}
-        className="w-4 h-4"
-      />
-
-      Não mostrar mais esta mensagem
-
-    </label>
-
-    {/* BOTÕES */}
-    <div className="flex gap-3">
-
-      <a
-        href="https://SEULINKAQUI.com"
-        target="_blank"
-        className="flex-1 h-11 bg-[#0d8bff] hover:bg-[#2498ff] transition-all text-white font-bold text-center text-sm rounded-[12px] flex items-center justify-center"
+{mostrarPopup && (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.9 }}
+    animate={{ opacity: 1, scale: 1 }}
+    transition={{ duration: 0.35 }}
+    className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-md flex flex-col items-center justify-center px-4"
+  >
+    <div className="w-full max-w-[320px]">
+      <motion.div
+        animate={{ y: [0, -4, 0] }}
+        transition={{ repeat: Infinity, duration: 3 }}
+        className="relative w-full overflow-hidden rounded-[28px]"
+        style={{ aspectRatio: "9/16" }}
       >
-        Acessar Plataforma
-      </a>
+        <img
+          src="/popup-427win.webp"
+          className="w-full h-full object-cover"
+        />
+      </motion.div>
 
-      <button
-        onClick={fecharPopup}
-        className="flex-1 h-11 bg-[#ff9800] hover:bg-[#ffad33] transition-all text-white font-bold text-sm rounded-[12px]"
-      >
-        Fechar
-      </button>
+      <label className="flex items-center gap-2 mt-3 mb-3 text-white text-sm px-2">
+        <input
+          type="checkbox"
+          onChange={(e) => {
+            if (e.target.checked) {
+              localStorage.setItem("popup-plataforma", "true");
+            } else {
+              localStorage.removeItem("popup-plataforma");
+            }
+          }}
+          className="w-4 h-4"
+        />
+        Não mostrar mais esta mensagem
+      </label>
 
+      <div className="flex gap-3">
+        <a
+          href="https://SEULINKAQUI.com"
+          target="_blank"
+          className="flex-1 h-11 bg-[#0d8bff] hover:bg-[#2498ff] transition-all text-white font-bold text-center text-sm rounded-[12px] flex items-center justify-center"
+        >
+          Acessar Plataforma
+        </a>
+
+        <button
+          type="button"
+          onClick={() => setMostrarPopup(false)}
+          className="flex-1 h-11 bg-[#ff9800] hover:bg-[#ffad33] transition-all text-white font-bold text-sm rounded-[12px]"
+        >
+          Fechar
+        </button>
+      </div>
     </div>
-
-  </div>
-</motion.div>
+  </motion.div>
+)}
     </main>
   );
 }
