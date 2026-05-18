@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 
+
 const CONFIG = {
   logo: "/logo.png",
   plataformas: [
@@ -67,6 +68,21 @@ const limitar = (valor: number, min: number, max: number) => {
 };
 
 export default function Home() {
+  const [mostrarPopup, setMostrarPopup] = useState(false);
+
+useEffect(() => {
+  const popupFechado = localStorage.getItem("popup-plataforma");
+
+  if (true) {
+    setTimeout(() => {
+      setMostrarPopup(true);
+    }, 1200);
+  }
+}, []);
+const fecharPopup = () => {
+  localStorage.setItem("popup-plataforma", "true");
+  setMostrarPopup(false);
+};
   const [busca, setBusca] = useState("");
   const [categoriaAtiva, setCategoriaAtiva] = useState("Todos");
   const [montado, setMontado] = useState(false);
@@ -205,10 +221,10 @@ export default function Home() {
           <img
             src="/logo.webp"
             alt="Slot da Sorte"
-            className="w-[220px] md:w-[320px] drop-shadow-[0_0_35px_rgba(34,197,94,0.35)]"
+            className="w-[200px] md:w-[360px] drop-shadow-[0_0_35px_rgba(34,197,94,0.35)]"
           />
 
-          <h2 className="text-6xl md:text-8xl font-black leading-[0.9] tracking-tighter uppercase max-w-4xl">
+          <h2 className="text-5xl md:text-7xl md:text-8xl font-black leading-[0.9] tracking-tighter uppercase max-w-4xl">
             SINAIS DE SLOT EM <span className="text-[#00ff66]">TEMPO REAL</span>
           </h2>
         </div>
@@ -302,7 +318,7 @@ export default function Home() {
 
           {/* GRID DE CARDS */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-5">
-            {filtrados.map((j) => {
+            {filtrados.map((j, index) => {
               return (
                 <a
                   key={j.id}
@@ -310,16 +326,23 @@ export default function Home() {
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ backgroundColor: j.cor }}
-                  className="border border-white/10 rounded-[32px] p-3 flex flex-col shadow-2xl transition-all hover:scale-[1.03]"
+                  className="border border-white/10 rounded-[24px] p-2.5 flex flex-col shadow-2xl transition-all hover:scale-[1.03]"
                 >
                   {/* BANNER */}
-                  <div className="relative aspect-[4/4.2] rounded-[26px] overflow-hidden mb-4 shadow-lg">
+                  <div className="relative aspect-[4/3.1] rounded-[26px] overflow-hidden mb-4 shadow-lg">
                     <img
                       src={`https://reidoslotsinais.bet/images/games/${j.id}.webp`}
                       className="w-full h-full object-cover"
                       alt={j.nome}
+                      loading={index < 8 ? "eager" : "lazy"}
+                      decoding="async"
                       onError={(e) => {
-                        e.currentTarget.src = `/jogos/${j.id}.webp`;
+                        if (!e.currentTarget.dataset.fallback) {
+                          e.currentTarget.dataset.fallback = "local";
+                          e.currentTarget.src = `/jogos/${j.id}.webp`;
+                        } else {
+                          e.currentTarget.src = "/placeholder.webp";
+                        }
                       }}
                     />
 
@@ -328,13 +351,13 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div className="px-1 space-y-4 grow flex flex-col">
+                  <div className="px-1 space-y-3 grow flex flex-col">
                     <div className="flex items-center gap-2">
-                      <h4 className="text-[14px] font-black text-white uppercase leading-none">{j.nome}</h4>
+                      <h4 className="text-[12px] font-black text-white uppercase leading-none">{j.nome}</h4>
                     </div>
 
                     {/* BARRAS */}
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {[
                         { l: "Mínima", v: j.min },
                         { l: "Padrão", v: j.pad },
@@ -353,7 +376,7 @@ export default function Home() {
 
                         return (
                           <div key={b.l}>
-                            <div className="flex justify-between text-[13px] font-black text-white uppercase mb-1">
+                            <div className="flex justify-between text-[10px] font-black text-white uppercase mb-1">
                               <span>{b.l}</span>
                               <span>{b.v}%</span>
                             </div>
@@ -373,7 +396,7 @@ export default function Home() {
 
                     {/* BOX DE APOSTAS */}
                     <div className="bg-black/20 rounded-[24px] p-3 border border-white/5 space-y-3 mt-auto">
-                      <p className="text-[#FFC801] text-[11px] font-black uppercase text-center tracking-widest italic">
+                      <p className="text-[#FFC801] text-[10px] font-bold uppercase text-center">
                         Apostas Sugeridas
                       </p>
 
@@ -381,8 +404,8 @@ export default function Home() {
                         const s = calcularSugestoes(j.bets);
 
                         return (
-                          <div className="space-y-3">
-                            <div className="space-y-1 text-[12px] font-black text-white uppercase tracking-tighter">
+                          <div className="space-y-">
+                            <div className="space-y-1 text-[10px] font-black text-white uppercase tracking-tighter">
                               <p className="text-center text-[10px] mb-1 tracking-widest">MÍNIMA</p>
                               <div className="flex justify-between items-center">
                                 <span>Bet Bônus:</span>
@@ -398,19 +421,19 @@ export default function Home() {
                               </div>
                             </div>
 
-                            <div className="space-y-1.5 pt-1 border-t border-white/5">
+                            <div className="space-y-1 pt-1 border-t border-white/5">
                               <p className="text-center text-[10px] font-black uppercase tracking-widest">PADRÃO</p>
                               <div className="grid grid-cols-2 gap-2">
-                                <div className="bg-[#22c55e] text-white text-center py-1.5 rounded-lg text-[13px] font-black">{s.p1}</div>
-                                <div className="bg-[#22c55e] text-white text-center py-1.5 rounded-lg text-[13px] font-black">{s.p2}</div>
+                                <div className="bg-[#22c55e] text-white text-center py-1.5 rounded-lg text-[11px] font-black">{s.p1}</div>
+                                <div className="bg-[#22c55e] text-white text-center py-1.5 rounded-lg text-[11px] font-black">{s.p2}</div>
                               </div>
                             </div>
 
-                            <div className="space-y-1.5 pt-1 border-t border-white/5">
+                            <div className="space-y-1 pt-1 border-t border-white/5">
                               <p className="text-center text-[10px] font-black uppercase tracking-widest">MÁXIMA</p>
                               <div className="grid grid-cols-2 gap-2">
-                                <div className="bg-[#22c55e] text-white text-center py-1.5 rounded-lg text-[13px] font-black">{s.m1}</div>
-                                <div className="bg-[#22c55e] text-white text-center py-1.5 rounded-lg text-[13px] font-black">{s.m2}</div>
+                                <div className="bg-[#22c55e] text-white text-center py-1.5 rounded-lg text-[11px] font-black">{s.m1}</div>
+                                <div className="bg-[#22c55e] text-white text-center py-1.5 rounded-lg text-[11px] font-black">{s.m2}</div>
                               </div>
                             </div>
                           </div>
@@ -418,7 +441,7 @@ export default function Home() {
                       })()}
                     </div>
 
-                    <div className="w-full bg-[#00cc55] text-white font-black py-3 rounded-[22px] text-xs uppercase mt-2 shadow-xl hover:bg-white hover:text-black transition-all flex items-center justify-center">
+                    <div className="w-full bg-[#00cc55] text-white font-black py-3 rounded-[22px] text-xs uppercase mt-1 shadow-xl hover:bg-white hover:text-black transition-all flex items-center justify-center">
                       Jogar ▶
                     </div>
                   </div>
@@ -473,6 +496,77 @@ export default function Home() {
           </div>
         </div>
       </footer>
+<motion.div
+  initial={{ opacity: 0, scale: 0.9 }}
+  animate={{ opacity: 1, scale: 1 }}
+  transition={{ duration: 0.35 }}
+  className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-md flex flex-col items-center justify-center px-4"
+>
+
+  {/* POPUP */}
+  <div className="w-full max-w-[320px]">
+
+    {/* CARD */}
+    <motion.div
+      animate={{
+        y: [0, -4, 0]
+      }}
+      transition={{
+        repeat: Infinity,
+        duration: 3
+      }}
+      className="relative w-full overflow-hidden rounded-[28px]"
+      style={{ aspectRatio: "9/16" }}
+    >
+
+      <img
+        src="/popup-427win.webp"
+        className="w-full h-full object-cover"
+      />
+
+    </motion.div>
+
+    {/* CHECKBOX */}
+    <label className="flex items-center gap-2 mt-3 mb-3 text-white text-sm px-2">
+
+      <input
+        type="checkbox"
+        onChange={(e) => {
+          if (e.target.checked) {
+            localStorage.setItem("popup-plataforma", "true");
+          } else {
+            localStorage.removeItem("popup-plataforma");
+          }
+        }}
+        className="w-4 h-4"
+      />
+
+      Não mostrar mais esta mensagem
+
+    </label>
+
+    {/* BOTÕES */}
+    <div className="flex gap-3">
+
+      <a
+        href="https://SEULINKAQUI.com"
+        target="_blank"
+        className="flex-1 h-11 bg-[#0d8bff] hover:bg-[#2498ff] transition-all text-white font-bold text-center text-sm rounded-[12px] flex items-center justify-center"
+      >
+        Acessar Plataforma
+      </a>
+
+      <button
+        onClick={fecharPopup}
+        className="flex-1 h-11 bg-[#ff9800] hover:bg-[#ffad33] transition-all text-white font-bold text-sm rounded-[12px]"
+      >
+        Fechar
+      </button>
+
+    </div>
+
+  </div>
+</motion.div>
     </main>
   );
 }
