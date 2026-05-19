@@ -575,12 +575,12 @@ const fecharPopup = () => {
 
   <div
     id="cta-whatsapp"
-    className="fixed bottom-3 right-3 z-[9999] w-[92%] max-w-[340px]"
+    className="fixed bottom-3 right-3 z-[9999] w-[92%] max-w-[280px]"
   >
 
     <div className="bg-[#9BE15D] text-black rounded-2xl shadow-2xl overflow-hidden border border-black/10">
 
-      <div className="flex items-center justify-between px-4 py-3 gap-3">
+      <div className="flex items-center justify-between px-3 py-2 gap-3">
 
         <a
           href="https://wa.me/5599999999999"
