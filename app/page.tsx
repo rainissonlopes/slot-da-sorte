@@ -71,6 +71,7 @@ const limitar = (valor: number, min: number, max: number) => {
 export default function Home() {
   const [mostrarPopup, setMostrarPopup] = useState(false);
   const [mostrarWhatsAppBar, setMostrarWhatsAppBar] = useState(false);
+  const [favoritos, setFavoritos] = useState<string[]>([]);
 
 useEffect(() => {
   const popupFechado = localStorage.getItem("popup-plataforma");
@@ -86,7 +87,38 @@ const fecharPopup = () => {
   localStorage.setItem("popup-fechado", "true");
 };
 
+useEffect(() => {
 
+  const favs = localStorage.getItem("favoritos");
+
+  if (favs) {
+    setFavoritos(JSON.parse(favs));
+  }
+
+}, []);
+
+const toggleFavorito = (id: string) => {
+
+  let novosFavoritos = [];
+
+  if (favoritos.includes(id)) {
+
+    novosFavoritos = favoritos.filter(f => f !== id);
+
+  } else {
+
+    novosFavoritos = [...favoritos, id];
+
+  }
+
+  setFavoritos(novosFavoritos);
+
+  localStorage.setItem(
+    "favoritos",
+    JSON.stringify(novosFavoritos)
+  );
+
+};
 
   const [busca, setBusca] = useState("");
   const [categoriaAtiva, setCategoriaAtiva] = useState("Todos");
@@ -206,9 +238,11 @@ const fecharPopup = () => {
     return jogos.filter((j) => {
       const bateBusca = j.nome.toLowerCase().includes(texto);
       const bateCategoria =
-        categoriaAtiva === "Todos" ||
-        j.cat === categoriaAtiva ||
-        (categoriaAtiva === "Favoritos" && (j.min >= 92 || j.dist >= 92));
+  categoriaAtiva === "Todos"
+    ? true
+    : categoriaAtiva === "Favoritos"
+    ? favoritos.includes(j.id)
+    : j.cat === categoriaAtiva;
 
       return bateBusca && bateCategoria;
     });
@@ -350,6 +384,30 @@ const fecharPopup = () => {
                         }
                       }}
                     />
+
+                    <button
+  onClick={(e) => {
+    e.preventDefault();
+    toggleFavorito(j.id);
+  }}
+  className="absolute top-2 right-2 z-20"
+>
+
+  {favoritos.includes(j.id) ? (
+
+    <span className="text-red-500 text-xl drop-shadow-lg">
+      ❤️
+    </span>
+
+  ) : (
+
+    <span className="text-white text-xl drop-shadow-lg">
+      🤍
+    </span>
+
+  )}
+
+</button>
 
                     <div className="absolute bottom-0 w-full bg-black/60 backdrop-blur-sm py-2 text-center">
                       <p className="text-[10px] font-black text-white">DISTRIBUIÇÃO: {j.dist}%</p>
