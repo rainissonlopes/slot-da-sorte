@@ -86,19 +86,7 @@ const fecharPopup = () => {
   localStorage.setItem("popup-fechado", "true");
 };
 
-useEffect(() => {
 
-  const fechado = localStorage.getItem("fechar-whatsapp-bar");
-
-  if (!fechado) {
-
-    setTimeout(() => {
-      setMostrarWhatsAppBar(true);
-    }, 2000);
-
-  }
-
-}, []);
 
   const [busca, setBusca] = useState("");
   const [categoriaAtiva, setCategoriaAtiva] = useState("Todos");
@@ -559,7 +547,21 @@ useEffect(() => {
 
         <button
           type="button"
-          onClick={() => setMostrarPopup(false)}
+          onClick={() => {
+
+          setMostrarPopup(false);
+
+          setTimeout(() => {
+
+            const fechado = localStorage.getItem("fechar-whatsapp-bar");
+
+            if (!fechado) {
+              setMostrarWhatsAppBar(true);
+            }
+
+          }, 500);
+
+        }}
           className="flex-1 h-11 bg-[#ff9800] hover:bg-[#ffad33] transition-all text-white font-bold text-sm rounded-[12px]"
         >
           Fechar
