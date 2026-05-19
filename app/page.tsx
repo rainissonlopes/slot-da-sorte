@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
+import { FaWhatsapp } from "react-icons/fa";
 
 
 const CONFIG = {
@@ -69,6 +70,7 @@ const limitar = (valor: number, min: number, max: number) => {
 
 export default function Home() {
   const [mostrarPopup, setMostrarPopup] = useState(false);
+  const [mostrarWhatsAppBar, setMostrarWhatsAppBar] = useState(false);
 
 useEffect(() => {
   const popupFechado = localStorage.getItem("popup-plataforma");
@@ -83,6 +85,21 @@ const fecharPopup = () => {
   setMostrarPopup(false);
   localStorage.setItem("popup-fechado", "true");
 };
+
+useEffect(() => {
+
+  const fechado = localStorage.getItem("fechar-whatsapp-bar");
+
+  if (!fechado) {
+
+    setTimeout(() => {
+      setMostrarWhatsAppBar(true);
+    }, 2000);
+
+  }
+
+}, []);
+
   const [busca, setBusca] = useState("");
   const [categoriaAtiva, setCategoriaAtiva] = useState("Todos");
   const [montado, setMontado] = useState(false);
@@ -550,6 +567,60 @@ const fecharPopup = () => {
       </div>
     </div>
   </motion.div>
+)}
+
+{mostrarWhatsAppBar && (
+
+  <div
+    id="cta-whatsapp"
+    className="fixed bottom-3 right-3 z-[9999] w-[92%] max-w-[340px]"
+  >
+
+    <div className="bg-[#9BE15D] text-black rounded-2xl shadow-2xl overflow-hidden border border-black/10">
+
+      <div className="flex items-center justify-between px-4 py-3 gap-3">
+
+        <a
+          href="https://wa.me/5599999999999"
+          target="_blank"
+          className="flex items-center gap-3 flex-1"
+        >
+
+          <FaWhatsapp className="text-[20px]" />
+
+          <div className="leading-tight">
+
+            <div className="font-black text-sm">
+              Grupo VIP no WhatsApp!
+            </div>
+
+            <div className="text-[11px] opacity-80">
+              Entre agora e receba sinais ao vivo
+            </div>
+
+          </div>
+
+        </a>
+
+        <button
+          onClick={() => {
+
+            localStorage.setItem("fechar-whatsapp-bar", "true");
+
+            setMostrarWhatsAppBar(false);
+
+          }}
+          className="text-black text-lg font-bold"
+        >
+          ×
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
 )}
     </main>
   );
