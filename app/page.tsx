@@ -596,7 +596,7 @@ const toggleFavorito = (id: string) => {
 
       <div className="flex gap-3">
         <a
-          href="https://SEULINKAQUI.com"
+          href="https://chat.whatsapp.com/Cp9JpegdNU59ppGiLJld8i"
           target="_blank"
           className="flex-1 h-11 bg-[#0d8bff] hover:bg-[#2498ff] transition-all text-white font-bold text-center text-sm rounded-[12px] flex items-center justify-center"
         >
