@@ -641,7 +641,7 @@ const toggleFavorito = (id: string) => {
       <div className="flex items-center justify-between px-3 py-2 gap-3">
 
         <a
-          href="https://wa.me/5599999999999"
+          href="https://chat.whatsapp.com/Cp9JpegdNU59ppGiLJld8i"
           target="_blank"
           className="flex items-center gap-3 flex-1"
         >
