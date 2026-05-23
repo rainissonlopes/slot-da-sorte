@@ -72,6 +72,18 @@ export default function Home() {
   const [mostrarPopup, setMostrarPopup] = useState(false);
   const [mostrarWhatsAppBar, setMostrarWhatsAppBar] = useState(false);
   const [favoritos, setFavoritos] = useState<string[]>([]);
+  const [configSite, setConfigSite] = useState<any>(null);
+
+  
+  useEffect(() => {
+
+  const config = localStorage.getItem("config-site");
+
+  if (config) {
+    setConfigSite(JSON.parse(config));
+  }
+
+}, []);
 
 useEffect(() => {
   const popupFechado = localStorage.getItem("popup-plataforma");
@@ -596,7 +608,7 @@ const toggleFavorito = (id: string) => {
 
       <div className="flex gap-3">
         <a
-          href="https://chat.whatsapp.com/Cp9JpegdNU59ppGiLJld8i"
+          href={configSite?.popupLink || "#"}
           target="_blank"
           className="flex-1 h-11 bg-[#0d8bff] hover:bg-[#2498ff] transition-all text-white font-bold text-center text-sm rounded-[12px] flex items-center justify-center"
         >
@@ -641,7 +653,7 @@ const toggleFavorito = (id: string) => {
       <div className="flex items-center justify-between px-3 py-2 gap-3">
 
         <a
-          href="https://chat.whatsapp.com/Cp9JpegdNU59ppGiLJld8i"
+          href={configSite?.whatsapp || "#"}
           target="_blank"
           className="flex items-center gap-3 flex-1"
         >
