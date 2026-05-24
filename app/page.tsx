@@ -253,7 +253,7 @@ const toggleFavorito = (id: string) => {
   categoriaAtiva === "Todos"
     ? true
     : categoriaAtiva === "Favoritos"
-    ? favoritos.includes(j.id)
+    ? favoritos.includes(String(j.id))
     : j.cat === categoriaAtiva;
 
       return bateBusca && bateCategoria;
@@ -400,12 +400,12 @@ const toggleFavorito = (id: string) => {
                     <button
   onClick={(e) => {
     e.preventDefault();
-    toggleFavorito(j.id);
+    toggleFavorito(String(j.id));
   }}
   className="absolute top-2 right-2 z-20"
 >
 
-  {favoritos.includes(j.id) ? (
+  {favoritos.includes(String(j.id)) ? (
 
     <span className="text-red-500 text-xl drop-shadow-lg">
       ❤️
