@@ -62,9 +62,7 @@ export default function AdminPage() {
             <input
               value={whatsapp}
               onChange={(e) => setWhatsapp(e.target.value)}
-              className="w-full h-12 rounded-xl bg-zinc-900 border border-zinc-700 px-4"
-              href={JSON.parse(localStorage.getItem("config-site") || "{}")?.whatsapp || "#"}
-            />
+              className="w-full h-12 rounded-xl bg-zinc-900 border border-zinc-700 px-4"            />
           </div>
 
           <div>
