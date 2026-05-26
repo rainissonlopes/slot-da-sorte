@@ -160,70 +160,124 @@ const toggleFavorito = (id: string) => {
 
   const categorias = ["Todos", "PG Games", "PP Games", "WG Games", "Favoritos"];
 
-  async function carregarCards(forcarAtualizacao = false) {
+async function carregarCards(forcarAtualizacao = false) {
+
+  try {
+
     if (!forcarAtualizacao) {
+
       const dadosSalvos = localStorage.getItem(CACHE_KEY);
 
       if (dadosSalvos) {
+
         try {
+
           const parsed = JSON.parse(dadosSalvos);
           const tempoPassado = Date.now() - parsed.timestamp;
 
           if (parsed.jogos && tempoPassado < CICLO_MS) {
+
             setJogos(parsed.jogos);
-            setUltimaAtualizacao(parsed.ultimaAtualizacao);
-            setProximaAtualizacao(Math.max(1, Math.floor((CICLO_MS - tempoPassado) / 1000)));
+
+            setUltimaAtualizacao(
+              parsed.ultimaAtualizacao
+            );
+
+            setProximaAtualizacao(
+              Math.max(
+                1,
+                Math.floor(
+                  (CICLO_MS - tempoPassado) / 1000
+                )
+              )
+            );
+
             return;
+
           }
+
         } catch {
+
           localStorage.removeItem(CACHE_KEY);
+
         }
+
       }
+
     }
 
-    const res = await fetch("/api/cards", { cache: "no-store" });
+    const res = await fetch("/api/cards", {
+      cache: "no-store",
+    });
+
     const data = await res.json();
 
+    console.log(data);
+
     const jogosFormatados: Jogo[] = (data.cards || [])
-      .sort((a: any, b: any) => b.porcentagem - a.porcentagem)
+      .sort(
+        (a: any, b: any) =>
+          b.porcentagem - a.porcentagem
+      )
       .slice(0, 250)
       .map((j: any, index: number) => {
-        // Regra atual: mínima costuma ser a métrica mais forte,
-        // padrão é intermediário e máxima é mais rara.
-        const minima = Math.floor(Math.random() * 29) + 70; // 70 a 98
-        const padrao = Math.floor(Math.random() * 41) + 45; // 45 a 85
-        const maxima = Math.floor(Math.random() * 46) + 25; // 25 a 70
 
-        // Distribuição acompanha a mínima, sem ficar sempre igual.
+        const minima =
+          Math.floor(Math.random() * 29) + 70;
+
+        const padrao =
+          Math.floor(Math.random() * 41) + 45;
+
+        const maxima =
+          Math.floor(Math.random() * 46) + 25;
+
         const distribuicao = limitar(
-          Math.floor(minima + Math.random() * 12 - 4),
+          Math.floor(
+            minima + Math.random() * 12 - 4
+          ),
           35,
           98
         );
 
         return {
+
           id: j.id,
+
           nome: j.nomeJogo,
+
           cat:
             j.categoriaJogo === "PG"
               ? "PG Games"
               : j.categoriaJogo === "PP"
               ? "PP Games"
               : "WG Games",
+
           dist: distribuicao,
+
           min: minima,
+
           pad: padrao,
+
           max: maxima,
+
           cor: j.colorBgGame,
+
           link:
-  plataformas.length > 0
-    ? plataformas[index % plataformas.length].link
-    : "#",
+            plataformas.length > 0
+              ? plataformas[
+                  index % plataformas.length
+                ].link
+              : "#",
+
           bets: j.bets || [],
+
         };
+
       });
 
-    const horaAtualizacao = data.lastUpdateTime || new Date().toLocaleTimeString("pt-BR");
+    const horaAtualizacao =
+      data.lastUpdateTime ||
+      new Date().toLocaleTimeString("pt-BR");
 
     localStorage.setItem(
       CACHE_KEY,
@@ -235,20 +289,32 @@ const toggleFavorito = (id: string) => {
     );
 
     setJogos(jogosFormatados);
+
     setUltimaAtualizacao(horaAtualizacao);
+
     setProximaAtualizacao(CICLO_SEGUNDOS);
+
+  } catch (err) {
+
+    console.log("ERRO CARDS:", err);
+
+  } finally {
+
+    setMontado(true);
+
   }
 
+}
+
 useEffect(() => {
+
   if (carregadoRef.current) return;
 
   if (plataformas.length === 0) return;
 
   carregadoRef.current = true;
 
-  carregarCards(false).finally(() => {
-    setMontado(true);
-  });
+  carregarCards(false);
 
 }, [plataformas]);
 
@@ -283,7 +349,13 @@ useEffect(() => {
     });
   }, [busca, categoriaAtiva, jogos]);
 
-  if (!montado) return null;
+  if (!montado) {
+  return (
+    <div className="text-white p-10">
+      carregando...
+    </div>
+  );
+}
 
   return (
     <main className="min-h-screen bg-[#020806] text-white font-sans overflow-x-hidden">
