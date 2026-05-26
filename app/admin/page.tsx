@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 export default function AdminPage() {
+  console.log(process.env.NEXT_PUBLIC_SUPABASE_URL)
 
   const [whatsapp, setWhatsapp] = useState("");
   const [instagram, setInstagram] = useState("");
@@ -11,36 +13,56 @@ export default function AdminPage() {
   const [configSite, setConfigSite] = useState<any>(null);
   useEffect(() => {
 
-  const config = localStorage.getItem("config-site");
+async function carregarConfig() {
 
-  if (config) {
+  const { data, error } = await supabase
+    .from("config_site")
+    .select("*")
+    .limit(1)
+    .single();
 
-    const dados = JSON.parse(config);
+  if(data){
 
-    setWhatsapp(dados.whatsapp || "");
-    setInstagram(dados.instagram || "");
-    setTelegram(dados.telegram || "");
-    setPopupLink(dados.popupLink || "");
+    setWhatsapp(data.whatsapp || "");
+    setInstagram(data.instagram || "");
+    setTelegram(data.telegram || "");
+    setPopupLink(data.popup_link || "");
 
   }
 
+  if(error){
+    console.log(error);
+  }
+
+}
+
+carregarConfig();
+
 }, []);
 
-  const salvar = () => {
+const salvar = async () => {
 
-    localStorage.setItem(
-      "config-site",
-      JSON.stringify({
-        whatsapp,
-        instagram,
-        telegram,
-        popupLink,
-      })
-    );
+  const { error } = await supabase
+    .from("config_site")
+    .upsert({
+      id: 1,
+      whatsapp,
+      instagram,
+      telegram,
+      popup_link: popupLink,
+    });
 
-    alert("Configurações salvas!");
+  if(error){
+    console.log(error);
+    alert("Erro ao salvar");
+    return;
+  }
 
-  };
+  alert("Configurações salvas!");
+
+};
+
+  
 
   return (
 

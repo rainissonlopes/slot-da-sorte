@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { FaWhatsapp } from "react-icons/fa";
+import { supabase } from "@/lib/supabase";
 
 
 const CONFIG = {
@@ -69,19 +70,34 @@ const limitar = (valor: number, min: number, max: number) => {
 };
 
 export default function Home() {
+    console.log(process.env.NEXT_PUBLIC_SUPABASE_URL);
   const [mostrarPopup, setMostrarPopup] = useState(false);
   const [mostrarWhatsAppBar, setMostrarWhatsAppBar] = useState(false);
   const [favoritos, setFavoritos] = useState<string[]>([]);
   const [configSite, setConfigSite] = useState<any>(null);
 
   
-  useEffect(() => {
+useEffect(() => {
 
-  const config = localStorage.getItem("config-site");
+  async function carregarConfig() {
 
-  if (config) {
-    setConfigSite(JSON.parse(config));
+    const { data, error } = await supabase
+      .from("config_site")
+      .select("*")
+      .limit(1)
+      .single();
+
+    if(data){
+      setConfigSite(data);
+    }
+
+    if(error){
+      console.log(error);
+    }
+
   }
+
+  carregarConfig();
 
 }, []);
 
