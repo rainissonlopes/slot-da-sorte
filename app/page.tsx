@@ -8,20 +8,6 @@ import { supabase } from "@/lib/supabase";
 
 const CONFIG = {
   logo: "/logo.png",
-  plataformas: [
-    { nome: "W1", link: "https://d3t8yxo5mdaq3g.cloudfront.net/?id=690562822", img: "https://u2xazisuiia0abmk.public.blob.vercel-storage.com/platforms/1778443410704-Untitled-design-a3PStUPqT8y1LS9F32prGdYv3kkOJn.png" },
-    { nome: "Clube", link: "https://www.427win.me/?id=744643472", img: "https://u2xazisuiia0abmk.public.blob.vercel-storage.com/platforms/1778515712317-Untitled-design-d27ktTW6CXOx8iA91KnEIms3rd3TWv.png" },
-    { nome: "777", link: "https://www.grao777.co/?id=849672265", img: "https://u2xazisuiia0abmk.public.blob.vercel-storage.com/platforms/1778521482234-Untitled-design-2P4HpM7XDECHsf9C72YDiHIjz4Me9i.png" },
-    { nome: "888", link: "https://581win.co/?id=826024195", img: "https://u2xazisuiia0abmk.public.blob.vercel-storage.com/platforms/1778596673059-Untitled-design-wzl2ltWnImjqZey5u8Qr34LLX1HuYh.png" },
-    { nome: "We", link: "https://www.we-knockerpg.com/?id=573405071", img: "https://u2xazisuiia0abmk.public.blob.vercel-storage.com/platforms/1778530058643-Untitled-design-AZ8o9DH2HddB0HpFOllCAm7WrUa0TI.png" },
-    { nome: "Ek", link: "https://www.ideiapg.co/?id=979738774", img: "https://u2xazisuiia0abmk.public.blob.vercel-storage.com/platforms/1778545045369-Untitled-design-LLFZVWAT7LeQOUHNd8Nyee3kAwOGk7.png" },
-    { nome: "WP", link: "https://www.unesppg.vip/?id=200534278", img: "https://u2xazisuiia0abmk.public.blob.vercel-storage.com/platforms/1778687094898-Untitled-design-YBYAPmUaCnD76RYrgJPO2el5QaSXOa.png" },
-    { nome: "Anjo", link: "https://cidadepg.co/?id=759128277", img: "https://u2xazisuiia0abmk.public.blob.vercel-storage.com/platforms/1778608342376-Untitled-design-T28uQ7b3AT6d03uxn678zMUBwVBsBd.png" },
-    { nome: "Voy", link: "https://www.floristpg.com/?id=433060625", img: "https://u2xazisuiia0abmk.public.blob.vercel-storage.com/platforms/1778616229328-Untitled-design-2Lc9qXrbGrQ13dI6NQRHTTDPXDC1Eu.png" },
-    { nome: "DY", link: "https://www.petiscopg.vip/?id=551345807", img: "https://u2xazisuiia0abmk.public.blob.vercel-storage.com/platforms/1778694838033-Untitled-design-xWCIeqTF8xyl3vhNLBjhiaEDACh0wq.png" },
-    { nome: "91", link: "https://www.handsetpg.com/?id=129343291", img: "https://u2xazisuiia0abmk.public.blob.vercel-storage.com/platforms/1778696465870-Untitled-design-itl7xyx8PjxMPC0j93hoiNh6PRZcP3.png" },
-    { nome: "A8", link: "https://a8-knucklepg.com/?id=976379813", img: "https://u2xazisuiia0abmk.public.blob.vercel-storage.com/platforms/1778707319877-Untitled-design-FSPY3nE8uERNEXChjn8yppB6o3warD.png" },
-  ],
 };
 
 const CACHE_KEY = "slotCards";
@@ -75,6 +61,7 @@ export default function Home() {
   const [mostrarWhatsAppBar, setMostrarWhatsAppBar] = useState(false);
   const [favoritos, setFavoritos] = useState<string[]>([]);
   const [configSite, setConfigSite] = useState<any>(null);
+  const [plataformas, setPlataformas] = useState<any[]>([]);
 
   
 useEffect(() => {
@@ -87,12 +74,26 @@ useEffect(() => {
       .limit(1)
       .single();
 
-    if(data){
+    if (data) {
       setConfigSite(data);
     }
 
-    if(error){
+    if (error) {
       console.log(error);
+    }
+
+    const { data: plataformasData, error: plataformasError } = await supabase
+      .from("plataformas")
+      .select("*")
+      .select("*");
+      console.log(plataformasData);
+
+    if (plataformasData) {
+      setPlataformas(plataformasData);
+    }
+
+    if (plataformasError) {
+      console.log(plataformasError);
     }
 
   }
@@ -214,7 +215,10 @@ const toggleFavorito = (id: string) => {
           pad: padrao,
           max: maxima,
           cor: j.colorBgGame,
-          link: CONFIG.plataformas[index % CONFIG.plataformas.length].link,
+          link:
+  plataformas.length > 0
+    ? plataformas[index % plataformas.length].link
+    : "#",
           bets: j.bets || [],
         };
       });
@@ -235,15 +239,18 @@ const toggleFavorito = (id: string) => {
     setProximaAtualizacao(CICLO_SEGUNDOS);
   }
 
-  useEffect(() => {
-    if (carregadoRef.current) return;
+useEffect(() => {
+  if (carregadoRef.current) return;
 
-    carregadoRef.current = true;
+  if (plataformas.length === 0) return;
 
-    carregarCards(false).finally(() => {
-      setMontado(true);
-    });
-  }, []);
+  carregadoRef.current = true;
+
+  carregarCards(false).finally(() => {
+    setMontado(true);
+  });
+
+}, [plataformas]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -305,7 +312,7 @@ const toggleFavorito = (id: string) => {
 
         <div className="bg-gradient-to-r from-green-900/90 via-green-700/70 to-green-900/90 border border-green-500/30 rounded-[40px] p-5 md:p-6 backdrop-blur-xl shadow-[0_0_40px_rgba(34,197,94,0.35)] max-w-7xl mx-auto overflow-visible">
           <div className="grid grid-cols-3 md:flex md:justify-center gap-4 md:gap-6">
-            {CONFIG.plataformas.map((p, i) => (
+            {plataformas.map((p, i) => (
               <a
                 key={i}
                 href={p.link}
@@ -318,7 +325,7 @@ const toggleFavorito = (id: string) => {
                 </div>
 
                 <img
-                  src={p.img}
+                  src={p.imagem}
                   className="w-full h-full object-cover rounded-[24px] opacity-90 hover:opacity-100 transition-all duration-300"
                   alt={p.nome}
                 />
