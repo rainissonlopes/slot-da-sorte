@@ -349,11 +349,9 @@ useEffect(() => {
     });
   }, [busca, categoriaAtiva, jogos]);
 
-  if (!montado) {
+if (!montado) {
   return (
-    <div className="text-white p-10">
-      carregando...
-    </div>
+    <div className="w-full h-screen bg-black" />
   );
 }
 
