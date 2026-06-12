@@ -11,6 +11,11 @@ export default function AdminPage() {
   const [telegram, setTelegram] = useState("");
   const [popupLink, setPopupLink] = useState("");
   const [configSite, setConfigSite] = useState<any>(null);
+  const [plataformas, setPlataformas] = useState<any[]>([]);
+  const [nomePlataforma, setNomePlataforma] = useState("");
+  const [linkPlataforma, setLinkPlataforma] = useState("");
+  const [imagemPlataforma, setImagemPlataforma] = useState("");
+  const [ordemPlataforma, setOrdemPlataforma] = useState(0);
   useEffect(() => {
 
 async function carregarConfig() {
@@ -40,28 +45,68 @@ carregarConfig();
 
 }, []);
 
-const salvar = async () => {
+async function salvar() {
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("config_site")
-    .upsert({
-      id: 1,
+    .update({
       whatsapp,
       instagram,
       telegram,
-      popup_link: popupLink,
-    });
+      popup_link: popupLink
+    })
+    .eq("id", 1)
+    .select();
 
-  if(error){
-    console.log(error);
-    alert("Erro ao salvar");
+    const { data: plataformasData, error: plataformasError } = await supabase
+  .from("plataformas")
+  .select("*")
+  .order("ordem", { ascending: true });
+
+if (plataformasData) {
+  setPlataformas(plataformasData);
+}
+
+if (plataformasError) {
+  console.log(plataformasError);
+}
+
+  console.log("DATA:", data);
+  console.log("ERROR:", error);
+
+  if (error) {
+    alert(JSON.stringify(error));
     return;
   }
 
-  alert("Configurações salvas!");
+  alert("Salvo!");
+}
+async function adicionarPlataforma() {
+  const { error } = await supabase
+    .from("plataformas")
+    .insert({
+      nome: nomePlataforma,
+      link: linkPlataforma,
+      imagem: imagemPlataforma,
+      ativo: true,
+      ordem: ordemPlataforma,
+    });
 
-};
+  if (error) {
+    console.log(error);
+    alert("Erro ao adicionar plataforma");
+    return;
+  }
 
+  alert("Plataforma adicionada!");
+
+  setNomePlataforma("");
+  setLinkPlataforma("");
+  setImagemPlataforma("");
+  setOrdemPlataforma(0);
+
+  carregarConfig();
+}
   
 
   return (
@@ -132,6 +177,71 @@ const salvar = async () => {
           >
             Salvar Configurações
           </button>
+
+          <div className="mt-12 border-t border-zinc-800 pt-8">
+  <h2 className="text-2xl font-black mb-6 text-green-400">
+    Plataformas
+  </h2>
+
+  <div className="space-y-4">
+    <input
+      value={nomePlataforma}
+      onChange={(e) => setNomePlataforma(e.target.value)}
+      placeholder="Nome da plataforma"
+      className="w-full h-12 rounded-xl bg-zinc-900 border border-zinc-700 px-4"
+    />
+
+    <input
+      value={linkPlataforma}
+      onChange={(e) => setLinkPlataforma(e.target.value)}
+      placeholder="Link da plataforma"
+      className="w-full h-12 rounded-xl bg-zinc-900 border border-zinc-700 px-4"
+    />
+
+    <input
+      value={imagemPlataforma}
+      onChange={(e) => setImagemPlataforma(e.target.value)}
+      placeholder="URL da imagem"
+      className="w-full h-12 rounded-xl bg-zinc-900 border border-zinc-700 px-4"
+    />
+
+    <input
+      type="number"
+      value={ordemPlataforma}
+      onChange={(e) => setOrdemPlataforma(Number(e.target.value))}
+      placeholder="Ordem"
+      className="w-full h-12 rounded-xl bg-zinc-900 border border-zinc-700 px-4"
+    />
+
+    <button
+      onClick={adicionarPlataforma}
+      className="w-full h-12 rounded-xl bg-yellow-400 hover:bg-yellow-300 transition-all font-bold text-black"
+    >
+      Adicionar Plataforma
+    </button>
+  </div>
+
+  <div className="mt-8 space-y-3">
+    {plataformas.map((p) => (
+      <div
+        key={p.id}
+        className="flex items-center gap-4 bg-zinc-900 border border-zinc-800 rounded-xl p-3"
+      >
+        <img
+          src={p.imagem}
+          alt={p.nome}
+          className="w-14 h-14 rounded-xl object-cover bg-black"
+        />
+
+        <div className="flex-1">
+          <div className="font-bold">{p.nome}</div>
+          <div className="text-xs text-zinc-400 truncate">{p.link}</div>
+          <div className="text-xs text-zinc-500">Ordem: {p.ordem}</div>
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
 
         </div>
 

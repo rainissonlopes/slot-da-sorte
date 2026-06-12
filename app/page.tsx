@@ -72,11 +72,17 @@ useEffect(() => {
       .from("config_site")
       .select("*")
       .limit(1)
-      .single();
+      .maybeSingle()
 
     if (data) {
       setConfigSite(data);
     }
+    console.log("CONFIG COMPLETA:", data);
+    console.log("CONFIG SITE:", data);
+    console.log(data?.whatsapp);
+    console.log(data?.instagram);
+    console.log(data?.telegram);
+    console.log(data?.popup_link);
 
     if (error) {
       console.log(error);
@@ -85,7 +91,6 @@ useEffect(() => {
     const { data: plataformasData, error: plataformasError } = await supabase
       .from("plataformas")
       .select("*")
-      .select("*");
       console.log(plataformasData);
 
     if (plataformasData) {
@@ -701,7 +706,7 @@ if (!montado) {
 
       <div className="flex gap-3">
         <a
-          href={configSite?.popupLink || "#"}
+          href={configSite?.popup_link || "#"}
           target="_blank"
           className="flex-1 h-11 bg-[#0d8bff] hover:bg-[#2498ff] transition-all text-white font-bold text-center text-sm rounded-[12px] flex items-center justify-center"
         >
