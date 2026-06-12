@@ -16,6 +16,7 @@ export default function AdminPage() {
   const [linkPlataforma, setLinkPlataforma] = useState("");
   const [imagemPlataforma, setImagemPlataforma] = useState("");
   const [ordemPlataforma, setOrdemPlataforma] = useState(0);
+  const [plataformaEditando, setPlataformaEditando] = useState<any>(null);
 
 
 useEffect(() => {
@@ -83,40 +84,58 @@ async function salvar() {
 }
 
 async function adicionarPlataforma() {
-  if (
-    !nomePlataforma ||
-    !linkPlataforma ||
-    !imagemPlataforma
-  ) {
+  if (!nomePlataforma || !linkPlataforma || !imagemPlataforma) {
     alert("Preencha todos os campos");
     return;
   }
 
-  const { error } = await supabase
-    .from("plataformas")
-    .insert({
-      nome: nomePlataforma,
-      link: linkPlataforma,
-      imagem: imagemPlataforma,
-      ativo: true,
-      ordem: ordemPlataforma,
-    });
+  const dados = {
+    nome: nomePlataforma,
+    link: linkPlataforma,
+    imagem: imagemPlataforma,
+    ativo: true,
+    ordem: ordemPlataforma,
+  };
+
+  const { error } = plataformaEditando
+    ? await supabase
+        .from("plataformas")
+        .update(dados)
+        .eq("id", plataformaEditando.id)
+    : await supabase
+        .from("plataformas")
+        .insert(dados);
 
   if (error) {
     console.log(error);
-    alert("Erro ao adicionar plataforma");
+    alert("Erro ao salvar plataforma");
     return;
   }
 
-  alert("Plataforma adicionada!");
+  alert(plataformaEditando ? "Plataforma atualizada!" : "Plataforma adicionada!");
 
   setNomePlataforma("");
   setLinkPlataforma("");
   setImagemPlataforma("");
   setOrdemPlataforma(0);
+  setPlataformaEditando(null);
 
   window.location.reload();
 }
+
+function editarPlataforma(p: any) {
+  setPlataformaEditando(p);
+  setNomePlataforma(p.nome || "");
+  setLinkPlataforma(p.link || "");
+  setImagemPlataforma(p.imagem || "");
+  setOrdemPlataforma(p.ordem || 0);
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth",
+  });
+}
+
 async function excluirPlataforma(id: number) {
   const confirmar = confirm("Tem certeza que deseja excluir esta plataforma?");
 
@@ -245,7 +264,9 @@ async function excluirPlataforma(id: number) {
       onClick={adicionarPlataforma}
       className="w-full h-12 rounded-xl bg-yellow-400 hover:bg-yellow-300 transition-all font-bold text-black"
     >
-      Adicionar Plataforma
+      {plataformaEditando
+  ? "Salvar Alterações"
+  : "Adicionar Plataforma"}
     </button>
   </div>
 
@@ -266,6 +287,14 @@ async function excluirPlataforma(id: number) {
           <div className="text-xs text-zinc-400 truncate">{p.link}</div>
           <div className="text-xs text-zinc-500">Ordem: {p.ordem}</div>
         </div>
+
+        <button
+  onClick={() => editarPlataforma(p)}
+  className="bg-zinc-700 hover:bg-zinc-600 text-white px-4 py-2 rounded-xl font-bold text-sm"
+>
+  Editar
+</button>
+
         <button
           onClick={() => excluirPlataforma(p.id)}
           className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-xl font-bold text-sm"
