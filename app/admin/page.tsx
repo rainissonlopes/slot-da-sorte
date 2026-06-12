@@ -16,47 +16,26 @@ export default function AdminPage() {
   const [linkPlataforma, setLinkPlataforma] = useState("");
   const [imagemPlataforma, setImagemPlataforma] = useState("");
   const [ordemPlataforma, setOrdemPlataforma] = useState(0);
-  useEffect(() => {
 
-async function carregarConfig() {
 
-  const { data, error } = await supabase
-    .from("config_site")
-    .select("*")
-    .limit(1)
-    .single();
+useEffect(() => {
+  async function carregarConfig() {
+    const { data, error } = await supabase
+      .from("config_site")
+      .select("*")
+      .limit(1)
+      .single();
 
-  if(data){
+    if (data) {
+      setWhatsapp(data.whatsapp || "");
+      setInstagram(data.instagram || "");
+      setTelegram(data.telegram || "");
+      setPopupLink(data.popup_link || "");
+    }
 
-    setWhatsapp(data.whatsapp || "");
-    setInstagram(data.instagram || "");
-    setTelegram(data.telegram || "");
-    setPopupLink(data.popup_link || "");
-
-  }
-
-  if(error){
-    console.log(error);
-  }
-
-}
-
-carregarConfig();
-
-}, []);
-
-async function salvar() {
-
-  const { data, error } = await supabase
-    .from("config_site")
-    .update({
-      whatsapp,
-      instagram,
-      telegram,
-      popup_link: popupLink
-    })
-    .eq("id", 1)
-    .select();
+    if (error) {
+      console.log(error);
+    }
 
     const { data: plataformasData, error: plataformasError } = await supabase
   .from("plataformas")
@@ -71,17 +50,48 @@ if (plataformasError) {
   console.log(plataformasError);
 }
 
+    
+
+
+  }
+
+  carregarConfig();
+}, []);
+
+async function salvar() {
+  const { data, error } = await supabase
+    .from("config_site")
+    .update({
+      whatsapp,
+      instagram,
+      telegram,
+      popup_link: popupLink,
+    })
+    .eq("id", 1)
+    .select();
+
   console.log("DATA:", data);
   console.log("ERROR:", error);
 
   if (error) {
-    alert(JSON.stringify(error));
+    alert("Erro ao salvar");
+    console.log(error);
     return;
   }
 
   alert("Salvo!");
 }
+
 async function adicionarPlataforma() {
+  if (
+    !nomePlataforma ||
+    !linkPlataforma ||
+    !imagemPlataforma
+  ) {
+    alert("Preencha todos os campos");
+    return;
+  }
+
   const { error } = await supabase
     .from("plataformas")
     .insert({
@@ -107,7 +117,25 @@ async function adicionarPlataforma() {
 
   window.location.reload();
 }
-  
+async function excluirPlataforma(id: number) {
+  const confirmar = confirm("Tem certeza que deseja excluir esta plataforma?");
+
+  if (!confirmar) return;
+
+  const { error } = await supabase
+    .from("plataformas")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.log(error);
+    alert("Erro ao excluir plataforma");
+    return;
+  }
+
+  alert("Plataforma excluída!");
+  window.location.reload();
+}  
 
   return (
 
@@ -238,6 +266,12 @@ async function adicionarPlataforma() {
           <div className="text-xs text-zinc-400 truncate">{p.link}</div>
           <div className="text-xs text-zinc-500">Ordem: {p.ordem}</div>
         </div>
+        <button
+          onClick={() => excluirPlataforma(p.id)}
+          className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-xl font-bold text-sm"
+        >
+          Excluir
+        </button>
       </div>
     ))}
   </div>
