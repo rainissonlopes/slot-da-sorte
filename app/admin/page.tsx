@@ -105,7 +105,7 @@ async function adicionarPlataforma() {
   setImagemPlataforma("");
   setOrdemPlataforma(0);
 
-  carregarConfig();
+  window.location.reload();
 }
   
 
