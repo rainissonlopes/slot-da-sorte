@@ -25,6 +25,7 @@ type Jogo = {
   cor: string;
   link: string;
   bets: string[];
+  imagemUrl?: string;
 };
 
 const calcularSugestoes = (bets: string[]) => {
@@ -166,149 +167,100 @@ const toggleFavorito = (id: string) => {
   const categorias = ["Todos", "PG Games", "PP Games", "WG Games", "Favoritos"];
 
 async function carregarCards(forcarAtualizacao = false) {
-
   try {
+    const dadosSalvos = localStorage.getItem(CACHE_KEY);
+    let cacheJogos: Jogo[] = [];
+    let cacheValido = false;
+    let cacheTimestamp = Date.now();
+    let tempoRestante = CICLO_SEGUNDOS;
 
-    if (!forcarAtualizacao) {
-
-      const dadosSalvos = localStorage.getItem(CACHE_KEY);
-
-      if (dadosSalvos) {
-
-        try {
-
-          const parsed = JSON.parse(dadosSalvos);
-          const tempoPassado = Date.now() - parsed.timestamp;
-
-          if (parsed.jogos && tempoPassado < CICLO_MS) {
-
-            setJogos(parsed.jogos);
-
-            setUltimaAtualizacao(
-              parsed.ultimaAtualizacao
-            );
-
-            setProximaAtualizacao(
-              Math.max(
-                1,
-                Math.floor(
-                  (CICLO_MS - tempoPassado) / 1000
-                )
-              )
-            );
-
-            return;
-
-          }
-
-        } catch {
-
-          localStorage.removeItem(CACHE_KEY);
-
+    if (dadosSalvos && !forcarAtualizacao) {
+      try {
+        const parsed = JSON.parse(dadosSalvos);
+        const tempoPassado = Date.now() - parsed.timestamp;
+        if (parsed.jogos && tempoPassado < CICLO_MS) {
+          cacheJogos = parsed.jogos;
+          cacheValido = true;
+          cacheTimestamp = parsed.timestamp;
+          tempoRestante = Math.max(
+            1,
+            Math.floor((CICLO_MS - tempoPassado) / 1000)
+          );
         }
-
+      } catch {
+        localStorage.removeItem(CACHE_KEY);
       }
-
     }
 
-    const res = await fetch("/api/cards", {
-      cache: "no-store",
-    });
+    const { data: sinaisData, error: sinaisError } = await supabase
+      .from("sinais")
+      .select("*");
 
-    const data = await res.json();
+    if (sinaisError) {
+      throw sinaisError;
+    }
 
-    console.log(data);
-
-    const jogosFormatados: Jogo[] = (data.cards || [])
-      .sort(
-        (a: any, b: any) =>
-          b.porcentagem - a.porcentagem
-      )
-      .slice(0, 250)
+    const jogosFormatados: Jogo[] = (sinaisData || [])
       .map((j: any, index: number) => {
+        const cachedGame = cacheValido
+          ? cacheJogos.find((cg) => String(cg.id) === String(j.id))
+          : null;
 
-        const minima =
-          Math.floor(Math.random() * 29) + 70;
-
-        const padrao =
-          Math.floor(Math.random() * 41) + 45;
-
-        const maxima =
-          Math.floor(Math.random() * 46) + 25;
-
-        const distribuicao = limitar(
-          Math.floor(
-            minima + Math.random() * 12 - 4
-          ),
-          35,
-          98
-        );
+        const minima = cachedGame ? cachedGame.min : Math.floor(Math.random() * 29) + 70;
+        const padrao = cachedGame ? cachedGame.pad : Math.floor(Math.random() * 41) + 45;
+        const maxima = cachedGame ? cachedGame.max : Math.floor(Math.random() * 46) + 25;
+        const distribuicao = cachedGame
+          ? cachedGame.dist
+          : limitar(Math.floor(minima + Math.random() * 12 - 4), 35, 98);
 
         return {
-
           id: j.id,
-
-          nome: j.nomeJogo,
-
-          cat:
-            j.categoriaJogo === "PG"
-              ? "PG Games"
-              : j.categoriaJogo === "PP"
-              ? "PP Games"
-              : "WG Games",
-
+          nome: j.nome_jogo,
+          cat: (j.categoria_jogo === "PG"
+            ? "PG Games"
+            : j.categoria_jogo === "PP"
+            ? "PP Games"
+            : "WG Games") as "PG Games" | "PP Games" | "WG Games",
           dist: distribuicao,
-
           min: minima,
-
           pad: padrao,
-
           max: maxima,
-
-          cor: j.colorBgGame,
-
+          cor: j.cor_background || "#1c1c1e",
           link:
             plataformas.length > 0
               ? plataformas[
                   index % plataformas.length
                 ].link
               : "#",
-
           bets: j.bets || [],
-
+          imagemUrl: j.imagem_url,
         };
+      })
+      .sort((a, b) => b.dist - a.dist)
+      .slice(0, 250);
 
-      });
-
-    const horaAtualizacao =
-      data.lastUpdateTime ||
-      new Date().toLocaleTimeString("pt-BR");
+    const horaAtualizacao = cacheValido && dadosSalvos
+      ? JSON.parse(dadosSalvos).ultimaAtualizacao
+      : new Date().toLocaleTimeString("pt-BR");
 
     localStorage.setItem(
       CACHE_KEY,
       JSON.stringify({
         jogos: jogosFormatados,
         ultimaAtualizacao: horaAtualizacao,
-        timestamp: Date.now(),
+        timestamp: cacheValido ? cacheTimestamp : Date.now(),
       })
     );
 
     setJogos(jogosFormatados);
-
     setUltimaAtualizacao(horaAtualizacao);
-
-    setProximaAtualizacao(CICLO_SEGUNDOS);
+    setProximaAtualizacao(cacheValido ? tempoRestante : CICLO_SEGUNDOS);
 
   } catch (err) {
-
     console.log("ERRO CARDS:", err);
-
   } finally {
-
     setMontado(true);
-
   }
-
 }
 
 useEffect(() => {
@@ -480,7 +432,11 @@ if (!montado) {
                   {/* BANNER */}
                   <div className="relative aspect-[4/3.1] rounded-[26px] overflow-hidden mb-4 shadow-lg">
                     <img
-                      src={`https://reidoslotsinais.bet/images/games/${j.id}.webp`}
+                      src={
+                        j.imagemUrl && (j.imagemUrl.startsWith("http") || j.imagemUrl.startsWith("/"))
+                          ? j.imagemUrl
+                          : `https://reidoslotsinais.bet/images/games/${j.imagemUrl || j.id}.webp`
+                      }
                       className="w-full h-full object-cover"
                       alt={j.nome}
                       loading={index < 8 ? "eager" : "lazy"}
@@ -488,7 +444,7 @@ if (!montado) {
                       onError={(e) => {
                         if (!e.currentTarget.dataset.fallback) {
                           e.currentTarget.dataset.fallback = "local";
-                          e.currentTarget.src = `/jogos/${j.id}.webp`;
+                          e.currentTarget.src = `/jogos/${j.imagemUrl || j.id}.webp`;
                         } else {
                           e.currentTarget.src = "/placeholder.webp";
                         }
