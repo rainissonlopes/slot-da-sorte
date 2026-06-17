@@ -1,9 +1,41 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 export default function AdminPage() {
+  const [loadingSession, setLoadingSession] = useState(true);
+  const [session, setSession] = useState<any>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    async function checkSession() {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!currentSession) {
+        router.push("/admin/login");
+      } else {
+        setSession(currentSession);
+        setLoadingSession(false);
+      }
+    }
+
+    checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+      if (!currentSession) {
+        router.push("/admin/login");
+      } else {
+        setSession(currentSession);
+        setLoadingSession(false);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [router]);
+
   console.log(process.env.NEXT_PUBLIC_SUPABASE_URL)
 
   const [whatsapp, setWhatsapp] = useState("");
@@ -261,15 +293,37 @@ async function excluirPlataforma(id: number) {
     window.location.reload();
   }
 
+  if (loadingSession) {
+    return (
+      <div className="min-h-screen bg-[#020806] text-white flex items-center justify-center font-sans">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-zinc-400 font-bold text-sm tracking-wider uppercase">Verificando sessão...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
 
     <main className="min-h-screen bg-black text-white p-6">
 
       <div className="max-w-xl mx-auto">
 
-        <h1 className="text-3xl font-black mb-8 text-green-400">
-          Painel Admin
-        </h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-black text-green-400">
+            Painel Admin
+          </h1>
+          <button
+            onClick={async () => {
+              await supabase.auth.signOut();
+              router.push("/admin/login");
+            }}
+            className="px-4 py-2 bg-red-600 hover:bg-red-500 transition-all font-bold text-white text-xs uppercase rounded-xl tracking-wider cursor-pointer"
+          >
+            Sair
+          </button>
+        </div>
 
         <div className="space-y-5">
 
