@@ -30,16 +30,29 @@ export default function AdminPage() {
   const router = useRouter();
 
   // Navigation and Layout states
-  const [activeTab, setActiveTab] = useState("overview"); // overview | platforms | signals | config
+  const [activeTab, setActiveTab] = useState("overview"); // overview | platforms | signals | config | appearance
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [lastFetchTime, setLastFetchTime] = useState("");
+
+  // Storage uploads loading state
+  const [uploading, setUploading] = useState<string | null>(null);
 
   // Site Configuration states
   const [whatsapp, setWhatsapp] = useState("");
   const [instagram, setInstagram] = useState("");
   const [telegram, setTelegram] = useState("");
   const [popupLink, setPopupLink] = useState("");
-  const [configSite, setConfigSite] = useState<any>(null);
+
+  // Appearance settings states (white-label)
+  const [nomeSite, setNomeSite] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [faviconUrl, setFaviconUrl] = useState("");
+  const [corPrimaria, setCorPrimaria] = useState("#00ff66");
+  const [corSecundaria, setCorSecundaria] = useState("#FFC801");
+  const [tituloHome, setTituloHome] = useState("");
+  const [subtituloHome, setSubtituloHome] = useState("");
+  const [textoCta, setTextoCta] = useState("");
+  const [bannerPrincipalUrl, setBannerPrincipalUrl] = useState("");
 
   // Platforms states
   const [plataformas, setPlataformas] = useState<any[]>([]);
@@ -94,9 +107,10 @@ export default function AdminPage() {
     };
   }, [router]);
 
-  // Load database configuration, platforms, and signals
+  // Load database configuration, appearance, platforms, and signals
   useEffect(() => {
     async function carregarConfig() {
+      // Carregar Configurações de Redes Sociais
       const { data, error } = await supabase
         .from("config_site")
         .select("*")
@@ -114,6 +128,30 @@ export default function AdminPage() {
         console.log(error);
       }
 
+      // Carregar Aparência White-Label (Default)
+      const { data: aparenciaData, error: aparenciaError } = await supabase
+        .from("aparencia")
+        .select("*")
+        .eq("domain", "default")
+        .maybeSingle();
+
+      if (aparenciaData) {
+        setNomeSite(aparenciaData.nome_site || "Slot da Sorte");
+        setLogoUrl(aparenciaData.logo_url || "");
+        setFaviconUrl(aparenciaData.favicon_url || "");
+        setCorPrimaria(aparenciaData.cor_primaria || "#00ff66");
+        setCorSecundaria(aparenciaData.cor_secundaria || "#FFC801");
+        setTituloHome(aparenciaData.titulo_home || "");
+        setSubtituloHome(aparenciaData.subtitulo_home || "");
+        setTextoCta(aparenciaData.texto_cta || "");
+        setBannerPrincipalUrl(aparenciaData.banner_principal_url || "");
+      }
+
+      if (aparenciaError) {
+        console.log("Erro carregar aparencia:", aparenciaError);
+      }
+
+      // Carregar Plataformas
       const { data: plataformasData, error: plataformasError } = await supabase
         .from("plataformas")
         .select("*")
@@ -127,6 +165,7 @@ export default function AdminPage() {
         console.log(plataformasError);
       }
 
+      // Carregar Sinais
       const { data: sinaisData, error: sinaisError } = await supabase
         .from("sinais")
         .select("*")
@@ -170,6 +209,147 @@ export default function AdminPage() {
 
     alert("Salvo!");
   }
+
+  // CRUD appearance (white-label)
+  async function salvarAparencia() {
+    const { error } = await supabase
+      .from("aparencia")
+      .update({
+        nome_site: nomeSite,
+        logo_url: logoUrl,
+        favicon_url: faviconUrl,
+        cor_primaria: corPrimaria,
+        cor_secundaria: corSecundaria,
+        titulo_home: tituloHome,
+        subtitulo_home: subtituloHome,
+        texto_cta: textoCta,
+        banner_principal_url: bannerPrincipalUrl,
+      })
+      .eq("domain", "default");
+
+    if (error) {
+      alert("Erro ao salvar aparência");
+      console.log(error);
+      return;
+    }
+
+    alert("Configurações de aparência salvas com sucesso!");
+  }
+
+  // Upload file to Supabase Storage and get public URL
+  async function handleStorageUpload(
+    e: React.ChangeEvent<HTMLInputElement>,
+    bucket: string,
+    setUrl: (url: string) => void,
+    fieldId: string
+  ) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Por favor, selecione um arquivo de no máximo 2MB.");
+      return;
+    }
+
+    setUploading(fieldId);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const cleanFileName = file.name.split('.')[0].replace(/[^a-zA-Z0-9]/g, '_');
+      const filePath = `${Date.now()}_${cleanFileName}.${fileExt}`;
+
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: true,
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(filePath);
+
+      setUrl(publicUrl);
+    } catch (err: any) {
+      console.error("Upload error:", err);
+      alert("Erro ao fazer upload para o Supabase Storage: " + (err.message || err));
+    } finally {
+      setUploading(null);
+    }
+  }
+
+  // Render a styled drag & drop/file select component with automatic upload & preview
+  const renderUploader = (
+    label: string, 
+    bucket: string, 
+    currentUrl: string, 
+    setUrl: (url: string) => void, 
+    fieldId: string,
+    aspectClass: string = "aspect-video"
+  ) => {
+    const isUploading = uploading === fieldId;
+    return (
+      <div className="space-y-2">
+        {label && (
+          <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500">
+            {label}
+          </label>
+        )}
+        <div className="relative group">
+          {currentUrl ? (
+            <div className={`relative ${aspectClass} w-full rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950 flex items-center justify-center p-1.5`}>
+              <img src={currentUrl} alt={label || "Uploaded preview"} className="w-full h-full object-contain" />
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
+                <label className="cursor-pointer bg-white text-black font-black text-[10px] uppercase tracking-wider px-3 py-2 rounded-lg hover:bg-zinc-200 transition-all">
+                  Alterar
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleStorageUpload(e, bucket, setUrl, fieldId)}
+                    className="hidden"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setUrl("")}
+                  className="bg-red-600 text-white font-black text-[10px] uppercase tracking-wider px-3 py-2 rounded-lg hover:bg-red-500 transition-all cursor-pointer"
+                >
+                  Excluir
+                </button>
+              </div>
+            </div>
+          ) : (
+            <label className={`cursor-pointer flex flex-col items-center justify-center ${aspectClass} w-full rounded-xl border border-dashed border-zinc-800 hover:border-emerald-500/40 bg-zinc-950/40 hover:bg-zinc-900/10 transition-all p-4`}>
+              {isUploading ? (
+                <div className="text-center space-y-2">
+                  <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Subindo arquivo...</span>
+                </div>
+              ) : (
+                <div className="text-center space-y-1">
+                  <div className="text-zinc-500 text-lg mb-1">📤</div>
+                  <span className="text-xs font-bold text-zinc-300">Selecionar arquivo</span>
+                  <span className="block text-[9px] text-zinc-600">Limite de 2MB</span>
+                </div>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleStorageUpload(e, bucket, setUrl, fieldId)}
+                className="hidden"
+                disabled={isUploading}
+              />
+            </label>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   // CRUD platforms
   async function adicionarPlataforma() {
@@ -348,19 +528,20 @@ export default function AdminPage() {
     { id: "overview", label: "Visão Geral", icon: FiGrid },
     { id: "platforms", label: "Plataformas", icon: FiLayers },
     { id: "signals", label: "Sinais de Slots", icon: FiPlayCircle },
-    { id: "config", label: "Configurações", icon: FiSettings },
+    { id: "config", label: "Redes Sociais", icon: FiSettings },
+    { id: "appearance", label: "Aparência", icon: FiGlobe },
   ];
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-zinc-950 text-zinc-200">
+    <div className="flex flex-col h-full bg-zinc-955 text-zinc-200">
       {/* Brand Header */}
       <div className="flex items-center gap-3 px-6 py-6 border-b border-zinc-900">
         <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 via-green-500 to-emerald-400 flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.35)]">
           <span className="text-black font-black text-xl tracking-tighter">S</span>
         </div>
         <div>
-          <h1 className="font-black tracking-tighter text-md text-white">
-            SLOT <span className="text-emerald-400">DA SORTE</span>
+          <h1 className="font-black tracking-tighter text-md text-white truncate max-w-[150px]">
+            {nomeSite || "SLOT DA SORTE"}
           </h1>
           <p className="text-[9px] text-zinc-500 uppercase tracking-widest font-black">Admin Panel</p>
         </div>
@@ -402,7 +583,7 @@ export default function AdminPage() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-bold text-zinc-300 truncate">{session?.user?.email || "Administrador"}</p>
-            <p className="text-[10px] text-zinc-500 truncate">Ativo</p>
+            <p className="text-[10px] text-zinc-505 truncate">Ativo</p>
           </div>
         </div>
         <button
@@ -527,7 +708,8 @@ export default function AdminPage() {
               {activeTab === "overview" && "Visão Geral"}
               {activeTab === "platforms" && "Gerenciar Plataformas"}
               {activeTab === "signals" && "Sinais de Slots"}
-              {activeTab === "config" && "Configurações do Site"}
+              {activeTab === "config" && "Redes Sociais"}
+              {activeTab === "appearance" && "Aparência & Identidade"}
             </h2>
           </div>
 
@@ -545,7 +727,7 @@ export default function AdminPage() {
                 await supabase.auth.signOut();
                 router.push("/admin/login");
               }}
-              className="md:hidden p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20 rounded-lg transition-all"
+              className="md:hidden p-2 text-red-400 hover:text-red-350 hover:bg-red-500/10 border border-red-500/20 rounded-lg transition-all"
               title="Sair"
             >
               <FiLogOut className="w-4 h-4" />
@@ -572,7 +754,7 @@ export default function AdminPage() {
                       
                       <div className="flex items-start justify-between">
                         <div className="space-y-2">
-                          <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">{card.title}</p>
+                          <p className="text-xs font-semibold text-zinc-505 uppercase tracking-wider">{card.title}</p>
                           <div className="flex items-center gap-2">
                             <h3 className="text-3xl font-black tracking-tight text-white">{card.value}</h3>
                             {card.isStatus && (
@@ -597,7 +779,7 @@ export default function AdminPage() {
               <div className="bg-zinc-900/10 border border-zinc-900 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div>
                   <h4 className="font-bold text-white text-sm">Ações Rápidas</h4>
-                  <p className="text-xs text-zinc-500">Escolha o que deseja fazer ou gerenciar a seguir.</p>
+                  <p className="text-xs text-zinc-550">Escolha o que deseja fazer ou gerenciar a seguir.</p>
                 </div>
                 <div className="flex items-center gap-3 w-full sm:w-auto">
                   <button 
@@ -613,10 +795,10 @@ export default function AdminPage() {
                     <FiPlus className="w-4 h-4" /> Sinal de Slot
                   </button>
                   <button 
-                    onClick={() => setActiveTab("config")}
+                    onClick={() => setActiveTab("appearance")}
                     className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 bg-zinc-900 border border-zinc-800 text-zinc-300 font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-zinc-800 transition-all cursor-pointer"
                   >
-                    <FiSettings className="w-4 h-4" /> Configs
+                    <FiGlobe className="w-4 h-4" /> Customizar Marca
                   </button>
                 </div>
               </div>
@@ -670,7 +852,7 @@ export default function AdminPage() {
                   </div>
                   <div className="space-y-3">
                     {sinais.slice(0, 3).map((s) => (
-                      <div key={s.id} className="flex items-center gap-3 bg-zinc-950/40 border border-zinc-900 rounded-xl p-3 hover:bg-zinc-900/20 transition-all">
+                      <div key={s.id} className="flex items-center gap-3 bg-zinc-955/40 border border-zinc-900 rounded-xl p-3 hover:bg-zinc-900/20 transition-all">
                         <img 
                           src={
                             s.imagem_url.startsWith("http") || s.imagem_url.startsWith("/")
@@ -687,15 +869,15 @@ export default function AdminPage() {
                         </div>
                         <span className={`px-2.5 py-0.5 text-[9px] font-black uppercase rounded ${
                           s.categoria_jogo === "PG" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" :
-                          s.categoria_jogo === "PP" ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" :
-                          "bg-purple-500/10 text-purple-400 border border-purple-500/20"
+                          s.categoria_jogo === "PP" ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
+                          "bg-purple-500/10 text-purple-400 border-purple-500/20"
                         }`}>
                           {s.categoria_jogo}
                         </span>
                       </div>
                     ))}
                     {sinais.length === 0 && (
-                      <p className="text-xs text-zinc-500 py-6 text-center">Nenhum sinal cadastrado.</p>
+                      <p className="text-xs text-zinc-550 py-6 text-center">Nenhum sinal cadastrado.</p>
                     )}
                   </div>
                 </div>
@@ -722,7 +904,7 @@ export default function AdminPage() {
                         setImagemPlataforma("");
                         setOrdemPlataforma(0);
                       }}
-                      className="text-xs font-bold text-red-400 hover:text-red-350 uppercase transition-colors cursor-pointer"
+                      className="text-xs font-bold text-red-400 hover:text-red-355 uppercase transition-colors cursor-pointer"
                     >
                       Cancelar
                     </button>
@@ -743,31 +925,28 @@ export default function AdminPage() {
                   </div>
 
                   <div>
-                    <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-500">
+                    <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-505">
                       Link de Afiliação
                     </label>
                     <input
                       value={linkPlataforma}
                       onChange={(e) => setLinkPlataforma(e.target.value)}
                       placeholder="ex: https://afiliado.com/..."
-                      className="w-full h-11 rounded-xl bg-zinc-950/80 border border-zinc-800 px-4 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all"
+                      className="w-full h-11 rounded-xl bg-zinc-950/80 border border-zinc-800 px-4 text-sm text-white placeholder-zinc-650 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all"
                     />
                   </div>
 
-                  <div>
-                    <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-500">
-                      URL da Imagem
-                    </label>
-                    <input
-                      value={imagemPlataforma}
-                      onChange={(e) => setImagemPlataforma(e.target.value)}
-                      placeholder="ex: https://sua-imagem.com/logo.webp"
-                      className="w-full h-11 rounded-xl bg-zinc-950/80 border border-zinc-800 px-4 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all"
-                    />
-                  </div>
+                  {renderUploader(
+                    "Logomarca da Plataforma",
+                    "plataformas",
+                    imagemPlataforma,
+                    setImagemPlataforma,
+                    "plataforma",
+                    "aspect-square"
+                  )}
 
                   <div>
-                    <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-500">
+                    <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-505">
                       Ordem de Exibição
                     </label>
                     <input
@@ -775,7 +954,7 @@ export default function AdminPage() {
                       value={ordemPlataforma}
                       onChange={(e) => setOrdemPlataforma(Number(e.target.value))}
                       placeholder="0"
-                      className="w-full h-11 rounded-xl bg-zinc-950/80 border border-zinc-800 px-4 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all"
+                      className="w-full h-11 rounded-xl bg-zinc-955/80 border border-zinc-800 px-4 text-sm text-white placeholder-zinc-650 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all"
                     />
                   </div>
 
@@ -818,7 +997,7 @@ export default function AdminPage() {
                               src={p.imagem}
                               alt={p.nome}
                               onError={(e) => { e.currentTarget.src = "/placeholder.webp"; }}
-                              className="w-10 h-10 rounded-xl object-cover bg-black border border-zinc-850 shadow-md"
+                              className="w-10 h-10 rounded-xl object-cover bg-black border border-zinc-855 shadow-md"
                             />
                           </td>
                           <td className="px-5 py-4 font-bold text-sm text-white">{p.nome}</td>
@@ -827,7 +1006,7 @@ export default function AdminPage() {
                               {p.link}
                             </a>
                           </td>
-                          <td className="px-5 py-4 text-sm text-zinc-400 font-mono font-bold">{p.ordem}</td>
+                          <td className="px-5 py-4 text-sm text-zinc-405 font-mono font-bold">{p.ordem}</td>
                           <td className="px-5 py-4">
                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-[9px] font-black uppercase rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -897,25 +1076,25 @@ export default function AdminPage() {
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-500">
+                    <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-505">
                       Nome do Jogo
                     </label>
                     <input
                       value={nomeJogo}
                       onChange={(e) => setNomeJogo(e.target.value)}
                       placeholder="ex: Fortune Tiger"
-                      className="w-full h-11 rounded-xl bg-zinc-950/80 border border-zinc-800 px-4 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all"
+                      className="w-full h-11 rounded-xl bg-zinc-955/80 border border-zinc-800 px-4 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all"
                     />
                   </div>
 
                   <div>
-                    <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-500">
+                    <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-505">
                       Categoria do Jogo
                     </label>
                     <select
                       value={categoriaJogo}
                       onChange={(e) => setCategoriaJogo(e.target.value)}
-                      className="w-full h-11 rounded-xl bg-zinc-950/80 border border-zinc-800 px-4 text-sm text-white focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all"
+                      className="w-full h-11 rounded-xl bg-zinc-955/80 border border-zinc-800 px-4 text-sm text-white focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all"
                     >
                       <option value="PG">PG Games</option>
                       <option value="PP">PP Games</option>
@@ -923,20 +1102,17 @@ export default function AdminPage() {
                     </select>
                   </div>
 
-                  <div>
-                    <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-500">
-                      URL da Imagem ou ID
-                    </label>
-                    <input
-                      value={imagemUrl}
-                      onChange={(e) => setImagemUrl(e.target.value)}
-                      placeholder="ex: 508 ou /jogos/tiger.webp"
-                      className="w-full h-11 rounded-xl bg-zinc-950/80 border border-zinc-800 px-4 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all"
-                    />
-                  </div>
+                  {renderUploader(
+                    "Imagem do Jogo",
+                    "jogos",
+                    imagemUrl,
+                    setImagemUrl,
+                    "sinal",
+                    "aspect-[4/3]"
+                  )}
 
                   <div>
-                    <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-500">
+                    <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-505">
                       Cor de Fundo (Hex)
                     </label>
                     <div className="flex gap-2">
@@ -944,7 +1120,7 @@ export default function AdminPage() {
                         value={corBackground}
                         onChange={(e) => setCorBackground(e.target.value)}
                         placeholder="ex: #1c1c1e"
-                        className="flex-1 h-11 rounded-xl bg-zinc-950/80 border border-zinc-800 px-4 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all font-mono"
+                        className="flex-1 h-11 rounded-xl bg-zinc-955/80 border border-zinc-800 px-4 text-sm text-white placeholder-zinc-605 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all font-mono"
                       />
                       <div 
                         className="w-11 h-11 rounded-xl border border-zinc-800 shadow-md"
@@ -954,14 +1130,14 @@ export default function AdminPage() {
                   </div>
 
                   <div>
-                    <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-500">
+                    <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-550">
                       Valores de Apostas (Separados por vírgula)
                     </label>
                     <textarea
                       value={betsString}
                       onChange={(e) => setBetsString(e.target.value)}
                       placeholder="ex: 0.50, 1.20, 2.40, 5.00"
-                      className="w-full h-20 rounded-xl bg-zinc-950/80 border border-zinc-800 px-4 py-2.5 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all resize-none font-mono"
+                      className="w-full h-20 rounded-xl bg-zinc-955/80 border border-zinc-800 px-4 py-2.5 text-sm text-white placeholder-zinc-605 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all resize-none font-mono"
                     />
                   </div>
 
@@ -1002,7 +1178,7 @@ export default function AdminPage() {
 
                 <div className="overflow-x-auto max-h-[600px] border border-zinc-800/60 rounded-xl scrollbar-thin">
                   <table className="w-full text-left border-collapse">
-                    <thead className="sticky top-0 bg-zinc-950 z-10 border-b border-zinc-850">
+                    <thead className="sticky top-0 bg-zinc-950 z-10 border-b border-zinc-855">
                       <tr>
                         <th className="px-5 py-3.5 text-xs font-black uppercase tracking-wider text-zinc-400 w-20">Jogo</th>
                         <th className="px-5 py-3.5 text-xs font-black uppercase tracking-wider text-zinc-400">Nome</th>
@@ -1042,7 +1218,7 @@ export default function AdminPage() {
                             {s.bets && s.bets.length > 0 ? (
                               <div className="flex gap-1.5 flex-wrap">
                                 {s.bets.slice(0, 3).map((b: string, i: number) => (
-                                  <span key={i} className="bg-zinc-950 text-zinc-400 px-1.5 py-0.5 rounded border border-zinc-850 font-mono text-[10px]">
+                                  <span key={i} className="bg-zinc-955 text-zinc-400 px-1.5 py-0.5 rounded border border-zinc-855 font-mono text-[10px]">
                                     {b}
                                   </span>
                                 ))}
@@ -1101,7 +1277,7 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* TAB 4: CONFIGURAÇÕES */}
+          {/* TAB 4: CONFIGURAÇÕES REDES SOCIAIS */}
           {activeTab === "config" && (
             <div className="max-w-2xl bg-zinc-900/30 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-6 md:p-8 space-y-6 animate-fade-in">
               <div className="flex items-center gap-3 border-b border-zinc-900 pb-4">
@@ -1109,7 +1285,7 @@ export default function AdminPage() {
                   <FiSettings className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-md font-bold text-white uppercase tracking-wider">Configurações do Site</h3>
+                  <h3 className="text-md font-bold text-white uppercase tracking-wider">Redes Sociais & Contatos</h3>
                   <p className="text-xs text-zinc-500">Ajuste os links de redes sociais e popup promocional.</p>
                 </div>
               </div>
@@ -1142,7 +1318,7 @@ export default function AdminPage() {
                       value={instagram}
                       onChange={(e) => setInstagram(e.target.value)}
                       placeholder="ex: https://instagram.com/usuario"
-                      className="w-full h-12 pl-11 pr-4 rounded-xl bg-zinc-950/80 border border-zinc-800 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all"
+                      className="w-full h-12 pl-11 pr-4 rounded-xl bg-zinc-955/80 border border-zinc-800 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all"
                     />
                   </div>
                 </div>
@@ -1158,7 +1334,7 @@ export default function AdminPage() {
                       value={telegram}
                       onChange={(e) => setTelegram(e.target.value)}
                       placeholder="ex: https://t.me/canal"
-                      className="w-full h-12 pl-11 pr-4 rounded-xl bg-zinc-950/80 border border-zinc-800 text-sm text-white placeholder-zinc-650 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all"
+                      className="w-full h-12 pl-11 pr-4 rounded-xl bg-zinc-955/80 border border-zinc-800 text-sm text-white placeholder-zinc-655 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all"
                     />
                   </div>
                 </div>
@@ -1169,12 +1345,12 @@ export default function AdminPage() {
                     <FiGlobe className="text-amber-400" /> Link do Popup Promocional
                   </label>
                   <div className="relative">
-                    <FiGlobe className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 w-4.5 h-4.5" />
+                    <FiGlobe className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-550 w-4.5 h-4.5" />
                     <input
                       value={popupLink}
                       onChange={(e) => setPopupLink(e.target.value)}
                       placeholder="ex: https://google.com"
-                      className="w-full h-12 pl-11 pr-4 rounded-xl bg-zinc-950/80 border border-zinc-800 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all"
+                      className="w-full h-12 pl-11 pr-4 rounded-xl bg-zinc-955/80 border border-zinc-800 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all"
                     />
                   </div>
                 </div>
@@ -1185,6 +1361,165 @@ export default function AdminPage() {
                 >
                   <FiCheck className="w-5 h-5" />
                   Salvar Configurações
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: APARÊNCIA & BRANDING */}
+          {activeTab === "appearance" && (
+            <div className="space-y-8 animate-fade-in">
+              <div className="flex items-center gap-3 border-b border-zinc-900 pb-4">
+                <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <FiGlobe className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-md font-bold text-white uppercase tracking-wider">Aparência & Identidade Visual</h3>
+                  <p className="text-xs text-zinc-500">Personalize as cores, textos, logotipos e banners da plataforma para adequar à sua marca.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Branding Identidade Visual Card */}
+                <div className="bg-zinc-900/30 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-6 space-y-5">
+                  <h4 className="font-bold text-white text-sm border-b border-zinc-900 pb-2">Identidade Visual da Marca</h4>
+
+                  {/* Nome do site */}
+                  <div>
+                    <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-400">
+                      Nome do Site / Marca
+                    </label>
+                    <input
+                      value={nomeSite}
+                      onChange={(e) => setNomeSite(e.target.value)}
+                      placeholder="ex: Slot da Sorte"
+                      className="w-full h-11 rounded-xl bg-zinc-950/80 border border-zinc-800 px-4 text-sm text-white placeholder-zinc-650 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all"
+                    />
+                  </div>
+
+                  {/* Cores */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-400">
+                        Cor Primária
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="color"
+                          value={corPrimaria}
+                          onChange={(e) => setCorPrimaria(e.target.value)}
+                          className="w-11 h-11 rounded-xl bg-zinc-955 border border-zinc-800 cursor-pointer p-1"
+                        />
+                        <input
+                          type="text"
+                          value={corPrimaria}
+                          onChange={(e) => setCorPrimaria(e.target.value)}
+                          className="flex-1 h-11 rounded-xl bg-zinc-955/80 border border-zinc-800 px-3 text-xs text-white placeholder-zinc-650 focus:border-emerald-500/50 focus:outline-none transition-all font-mono"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-400">
+                        Cor Secundária
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="color"
+                          value={corSecundaria}
+                          onChange={(e) => setCorSecundaria(e.target.value)}
+                          className="w-11 h-11 rounded-xl bg-zinc-955 border border-zinc-800 cursor-pointer p-1"
+                        />
+                        <input
+                          type="text"
+                          value={corSecundaria}
+                          onChange={(e) => setCorSecundaria(e.target.value)}
+                          className="flex-1 h-11 rounded-xl bg-zinc-955/80 border border-zinc-800 px-3 text-xs text-white placeholder-zinc-650 focus:border-emerald-500/50 focus:outline-none transition-all font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {renderUploader(
+                    "Logomarca da Marca (Upload)",
+                    "logos",
+                    logoUrl,
+                    setLogoUrl,
+                    "logo",
+                    "aspect-[3/1]"
+                  )}
+
+                  {renderUploader(
+                    "Favicon do Navegador (Upload)",
+                    "logos",
+                    faviconUrl,
+                    setFaviconUrl,
+                    "favicon",
+                    "aspect-square w-24 h-24 mx-auto"
+                  )}
+                </div>
+
+                {/* Homepage Layout settings */}
+                <div className="bg-zinc-900/30 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-6 space-y-5">
+                  <h4 className="font-bold text-white text-sm border-b border-zinc-900 pb-2">Conteúdo de Exibição na Homepage</h4>
+
+                  {/* Título Home */}
+                  <div>
+                    <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-400">
+                      Título Principal da Homepage
+                    </label>
+                    <input
+                      value={tituloHome}
+                      onChange={(e) => setTituloHome(e.target.value)}
+                      placeholder="ex: SINAIS DE SLOT EM TEMPO REAL"
+                      className="w-full h-11 rounded-xl bg-zinc-950/80 border border-zinc-800 px-4 text-sm text-white placeholder-zinc-650 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all"
+                    />
+                  </div>
+
+                  {/* Subtítulo Home */}
+                  <div>
+                    <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-400">
+                      Subtítulo / Descrição da Home
+                    </label>
+                    <textarea
+                      value={subtituloHome}
+                      onChange={(e) => setSubtituloHome(e.target.value)}
+                      placeholder="Descrição sutil para colocar abaixo da logo e no rodapé."
+                      className="w-full h-20 rounded-xl bg-zinc-950/80 border border-zinc-800 px-4 py-2.5 text-sm text-white placeholder-zinc-650 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all resize-none"
+                    />
+                  </div>
+
+                  {/* Texto CTA */}
+                  <div>
+                    <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-400">
+                      Texto do Botão CTA (Ação)
+                    </label>
+                    <input
+                      value={textoCta}
+                      onChange={(e) => setTextoCta(e.target.value)}
+                      placeholder="ex: Acessar Plataforma"
+                      className="w-full h-11 rounded-xl bg-zinc-955/80 border border-zinc-800 px-4 text-sm text-white placeholder-zinc-650 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all"
+                    />
+                  </div>
+
+                  {renderUploader(
+                    "Banner / Imagem Principal (Upload)",
+                    "banners",
+                    bannerPrincipalUrl,
+                    setBannerPrincipalUrl,
+                    "banner",
+                    "aspect-[16/9]"
+                  )}
+                </div>
+              </div>
+
+              {/* Botão Salvar Geral */}
+              <div className="flex justify-end pt-4">
+                <button
+                  onClick={salvarAparencia}
+                  className="w-full sm:w-auto px-8 h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-400 hover:to-green-400 text-black font-black text-xs uppercase tracking-wider transition-all duration-300 shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <FiCheck className="w-5 h-5" />
+                  Salvar Alterações de Aparência
                 </button>
               </div>
             </div>
