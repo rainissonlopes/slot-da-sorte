@@ -242,8 +242,8 @@ export default function Home() {
             cat: (j.categoria_jogo === "PG"
               ? "PG Games"
               : j.categoria_jogo === "PP"
-              ? "PP Games"
-              : "WG Games") as "PG Games" | "PP Games" | "WG Games",
+                ? "PP Games"
+                : "WG Games") as "PG Games" | "PP Games" | "WG Games",
             dist: distribuicao,
             min: minima,
             pad: padrao,
@@ -308,8 +308,8 @@ export default function Home() {
         categoriaAtiva === "Todos"
           ? true
           : categoriaAtiva === "Favoritos"
-          ? favoritos.includes(String(j.id))
-          : j.cat === categoriaAtiva;
+            ? favoritos.includes(String(j.id))
+            : j.cat === categoriaAtiva;
       return bateBusca && bateCategoria;
     });
   }, [busca, categoriaAtiva, jogos, favoritos]);
@@ -323,7 +323,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#020806] text-white font-sans overflow-x-hidden">
-      
+
       {/* Estilos dinâmicos do branding customizável */}
       <style>{`
         :root {
@@ -433,7 +433,7 @@ export default function Home() {
           </h3>
         </div>
 
-        <div 
+        <div
           className="border rounded-[40px] p-5 md:p-6 backdrop-blur-xl shadow-2xl max-w-7xl mx-auto overflow-visible"
           style={{
             borderColor: `rgba(${hexToRgb(primaryHex)}, 0.3)`,
@@ -449,7 +449,7 @@ export default function Home() {
                 rel="noopener noreferrer"
                 className="relative w-[88px] h-[88px] md:w-20 md:h-20 rounded-[24px] bg-zinc-950 border border-white/5 overflow-visible shadow-2xl transition-all duration-300 hover:scale-105 hover:border-primary-dynamic active:scale-95 animate-platform-float"
               >
-                <div 
+                <div
                   className="absolute -top-3 -right-2 text-white text-[9px] px-3 py-[2px] rounded-full font-black uppercase border border-white/20 shadow-lg z-20"
                   style={{
                     backgroundColor: primaryHex,
@@ -473,9 +473,9 @@ export default function Home() {
       {/* --- SEÇÃO 02: SINAIS AO VIVO --- */}
       <section className="bg-[#020806] pt-10 pb-24 px-4">
         <div className="max-w-[1500px] mx-auto space-y-12">
-          
+
           {/* CONTADOR */}
-          <div 
+          <div
             className="relative w-full max-w-[400px] h-[120px] mx-auto rounded-[28px] border bg-counter-gradient shadow-[0_0_35px_rgba(34,197,94,0.15)] overflow-hidden flex items-center justify-center"
             style={{ borderColor: `rgba(${hexToRgb(primaryHex)}, 0.3)` }}
           >
@@ -516,11 +516,10 @@ export default function Home() {
                   <button
                     key={c}
                     onClick={() => setCategoriaAtiva(c)}
-                    className={`whitespace-nowrap px-7 py-3 rounded-full text-[12px] font-black uppercase transition-all duration-300 cursor-pointer ${
-                      categoriaAtiva === c
+                    className={`whitespace-nowrap px-7 py-3 rounded-full text-[12px] font-black uppercase transition-all duration-300 cursor-pointer ${categoriaAtiva === c
                         ? "filter-active-btn"
                         : "text-white/45 hover:text-white"
-                    }`}
+                      }`}
                   >
                     {c}
                   </button>
