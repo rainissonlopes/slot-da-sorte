@@ -318,11 +318,13 @@ export default function Home() {
     return <div className="w-full h-screen bg-black" />;
   }
 
-  const primaryHex = aparencia?.cor_primaria || "#00ff66";
-  const secondaryHex = aparencia?.cor_secundaria || "#FFC801";
+  const primaryHex = aparencia?.cor_primaria || "#16A34A";
+  const secondaryHex = aparencia?.cor_secundaria || "#22C55E";
 
   return (
-    <main className="min-h-screen bg-[#020806] text-white font-sans overflow-x-hidden">
+    <main className="relative min-h-screen text-white font-sans overflow-x-hidden">
+      {/* Background Fixo Global */}
+      <div className="fixed-bg" />
 
       {/* Estilos dinâmicos do branding customizável */}
       <style>{`
@@ -398,7 +400,7 @@ export default function Home() {
       `}</style>
 
       {/* --- SEÇÃO 01: HEADER E LANDING --- */}
-      <section className="relative pt-8 pb-10 px-6 bg-[radial-gradient(circle_at_center,var(--primary-glow),transparent_60%)]">
+      <section className="relative pt-8 pb-10 px-6">
         <header className="max-w-7xl mx-auto flex items-center justify-between mb-16" />
 
         <div className="max-w-7xl mx-auto text-center flex flex-col items-center space-y-8">
@@ -428,7 +430,7 @@ export default function Home() {
 
         {/* PLATAFORMAS INDICADAS */}
         <div className="mt-12 mb-4 text-center">
-          <h3 className="text-3xl font-black uppercase tracking-wide text-secondary-dynamic glow-secondary-dynamic">
+          <h3 className="text-3xl font-black uppercase tracking-wide text-primary-dynamic glow-primary-dynamic">
             PLATAFORMAS INDICADAS
           </h3>
         </div>
@@ -437,7 +439,7 @@ export default function Home() {
           className="border rounded-[40px] p-5 md:p-6 backdrop-blur-xl shadow-2xl max-w-7xl mx-auto overflow-visible"
           style={{
             borderColor: `rgba(${hexToRgb(primaryHex)}, 0.3)`,
-            backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.95), rgba(${hexToRgb(primaryHex)}, 0.1), rgba(0,0,0,0.95))`
+            backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.4), rgba(${hexToRgb(primaryHex)}, 0.1), rgba(0,0,0,0.4))`
           }}
         >
           <div className="grid grid-cols-3 md:flex md:justify-center gap-4 md:gap-6">
@@ -471,7 +473,7 @@ export default function Home() {
       </section>
 
       {/* --- SEÇÃO 02: SINAIS AO VIVO --- */}
-      <section className="bg-[#020806] pt-10 pb-24 px-4">
+      <section className="pt-10 pb-24 px-4">
         <div className="max-w-[1500px] mx-auto space-y-12">
 
           {/* CONTADOR */}
