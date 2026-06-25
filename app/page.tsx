@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { FaWhatsapp } from "react-icons/fa";
+import { FaWhatsapp, FaHome, FaInstagram, FaTelegram } from "react-icons/fa";
 import { supabase } from "@/lib/supabase";
 
 const CONFIG = {
@@ -399,8 +399,30 @@ export default function Home() {
         }
       `}</style>
 
+      {/* --- BARRA SOCIAL FIXA --- */}
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[90] w-[96%] max-w-[480px]">
+        <div className="flex items-center justify-between bg-[#0a0a0a]/85 backdrop-blur-md border border-primary-dynamic rounded-full px-3 py-2 shadow-[0_0_15px_var(--primary-glow)]">
+          <a href="#" className="flex flex-col items-center gap-1 group text-zinc-400 hover:text-white transition-all cursor-pointer w-16">
+            <FaHome className="text-lg md:text-xl group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all" />
+            <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-wider">Home</span>
+          </a>
+          <a href={configSite?.instagram || "#"} target="_blank" className="flex flex-col items-center gap-1 group text-zinc-400 hover:text-white transition-all cursor-pointer w-16">
+            <FaInstagram className="text-lg md:text-xl group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all" />
+            <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-wider">Instagram</span>
+          </a>
+          <a href={configSite?.telegram || "#"} target="_blank" className="flex flex-col items-center gap-1 group text-zinc-400 hover:text-white transition-all cursor-pointer w-16">
+            <FaTelegram className="text-lg md:text-xl group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all" />
+            <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-wider">Telegram</span>
+          </a>
+          <a href={configSite?.whatsapp || "#"} target="_blank" className="flex items-center justify-center gap-1.5 bg-primary-dynamic text-black px-3 md:px-4 py-2 rounded-full font-black uppercase text-[10px] md:text-xs hover:scale-105 transition-all shadow-[0_0_15px_var(--primary-glow)] cursor-pointer ml-1">
+            <FaWhatsapp className="text-base md:text-lg" />
+            <span>Grupo VIP</span>
+          </a>
+        </div>
+      </div>
+
       {/* --- SEÇÃO 01: HEADER E LANDING --- */}
-      <section className="relative pt-8 pb-10 px-6">
+      <section className="relative pt-28 pb-10 px-6">
         <header className="max-w-7xl mx-auto flex items-center justify-between mb-16" />
 
         <div className="max-w-7xl mx-auto text-center flex flex-col items-center space-y-8">
@@ -436,26 +458,27 @@ export default function Home() {
         </div>
 
         <div
-          className="border rounded-[40px] p-5 md:p-6 backdrop-blur-xl shadow-2xl max-w-7xl mx-auto overflow-visible"
+          className="border rounded-[32px] py-8 px-6 md:px-10 max-w-[95%] xl:max-w-7xl mx-auto overflow-visible shadow-[0_0_35px_rgba(0,255,102,0.15)] backdrop-blur-md"
           style={{
-            borderColor: `rgba(${hexToRgb(primaryHex)}, 0.3)`,
-            backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.4), rgba(${hexToRgb(primaryHex)}, 0.1), rgba(0,0,0,0.4))`
+            backgroundColor: '#004d06',
+            borderColor: 'rgba(0, 255, 102, 0.3)',
           }}
         >
-          <div className="grid grid-cols-3 md:flex md:justify-center gap-4 md:gap-6">
+          <div className="flex flex-row justify-center items-center flex-wrap gap-6 md:gap-10">
             {plataformas.map((p, i) => (
               <a
                 key={i}
                 href={p.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="relative w-[88px] h-[88px] md:w-20 md:h-20 rounded-[24px] bg-zinc-950 border border-white/5 overflow-visible shadow-2xl transition-all duration-300 hover:scale-105 hover:border-primary-dynamic active:scale-95 animate-platform-float"
+                className="relative w-[88px] h-[88px] md:w-[100px] md:h-[100px] rounded-[24px] border border-white/10 overflow-visible shadow-2xl transition-all duration-300 hover:scale-110 hover:border-white/40 active:scale-95 animate-platform-float"
               >
                 <div
-                  className="absolute -top-3 -right-2 text-white text-[9px] px-3 py-[2px] rounded-full font-black uppercase border border-white/20 shadow-lg z-20"
+                  className="absolute -top-3 -right-2 text-[10px] px-3 py-[2px] rounded-full font-black uppercase shadow-lg z-20 text-white"
                   style={{
-                    backgroundColor: primaryHex,
-                    boxShadow: `0 0 14px ${primaryHex}`
+                    background: "linear-gradient(180deg, #7A4A3A 0%, #5A3428 100%)",
+                    border: "1px solid rgba(255,255,255,.15)",
+                    boxShadow: "0 2px 8px rgba(0,0,0,.35), inset 0 1px 2px rgba(255,255,255,0.2)"
                   }}
                 >
                   NOVO
@@ -686,55 +709,89 @@ export default function Home() {
       </section>
 
       {/* --- FOOTER --- */}
-      <footer className="bg-black border-t border-white/5 pt-20 pb-10 px-6">
-        <div className="max-w-[1500px] mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+      <footer className="bg-[#050505] border-t border-white/10 pt-20 pb-8 px-6 relative overflow-hidden mt-10">
+        {/* Glow de fundo para visual premium */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-[1px] bg-gradient-to-r from-transparent via-primary-dynamic to-transparent opacity-50" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-[40px] bg-primary-dynamic blur-[80px] opacity-10" />
+
+        <div className="max-w-[1500px] mx-auto relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8 mb-16">
+            
+            {/* 1. Marca */}
             <div className="space-y-6">
-              <div className="flex items-center gap-2">
-                <img src={aparencia?.logo_url || CONFIG.logo} alt="Logo" className="w-8 h-8 opacity-50 object-contain" />
-                <h1 className="font-black tracking-tighter text-xl text-white">
+              <div className="flex items-center gap-3">
+                <img src={aparencia?.logo_url || CONFIG.logo} alt="Logo" className="w-10 h-10 object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.15)]" />
+                <h1 className="font-black tracking-tighter text-2xl text-white">
                   {aparencia?.nome_site ? (
                     aparencia.nome_site.split(" ").map((w: string, i: number, arr: string[]) => {
                       const isLast = i === arr.length - 1;
                       return <span key={i} className={isLast ? "text-primary-dynamic" : "text-white"}>{w} </span>;
                     })
                   ) : (
-                    <>
-                      SLOT <span className="text-primary-dynamic">DA SORTE</span>
-                    </>
+                    <>SLOT <span className="text-primary-dynamic">DA SORTE</span></>
                   )}
                 </h1>
               </div>
-              <p className="text-zinc-600 text-sm leading-relaxed uppercase font-bold text-[10px]">
-                {aparencia?.subtitulo_home || "A plataforma de sinais mais assertiva do mercado."}
+              <p className="text-zinc-400 text-sm leading-relaxed">
+                {aparencia?.subtitulo_home || "Plataforma líder em análise e sinais estatísticos para slots. Ferramenta premium desenvolvida para jogadores em busca de resultados embasados."}
               </p>
             </div>
 
-            <div className="space-y-4">
-              <h4 className="text-white font-black uppercase text-xs tracking-widest">Links</h4>
-              <ul className="space-y-2 text-zinc-600 text-[10px] font-black uppercase">
-                <li className="hover:text-primary-dynamic cursor-pointer">Sinais ao Vivo</li>
-                <li className="hover:text-primary-dynamic cursor-pointer">Grupo VIP</li>
+            {/* 2. Links */}
+            <div className="space-y-6 lg:pl-8">
+              <h4 className="text-white font-black uppercase text-sm tracking-widest flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary-dynamic shadow-[0_0_8px_var(--primary-glow)]"></span>
+                Links Úteis
+              </h4>
+              <ul className="space-y-3 text-zinc-400 text-sm font-medium">
+                <li><a href="#" className="hover:text-primary-dynamic transition-colors flex items-center gap-2"><span className="text-primary-dynamic/50 text-[10px]">▶</span> Sinais ao Vivo</a></li>
+                <li><a href={configSite?.whatsapp || "#"} target="_blank" className="hover:text-primary-dynamic transition-colors flex items-center gap-2"><span className="text-primary-dynamic/50 text-[10px]">▶</span> Grupo VIP</a></li>
+                <li><a href={configSite?.instagram || "#"} target="_blank" className="hover:text-primary-dynamic transition-colors flex items-center gap-2"><span className="text-primary-dynamic/50 text-[10px]">▶</span> Instagram</a></li>
+                <li><a href={configSite?.telegram || "#"} target="_blank" className="hover:text-primary-dynamic transition-colors flex items-center gap-2"><span className="text-primary-dynamic/50 text-[10px]">▶</span> Telegram</a></li>
+                <li><a href="#" className="hover:text-white transition-colors flex items-center gap-2 mt-4"><span className="text-zinc-600 text-[10px]">▶</span> Política de Privacidade</a></li>
+                <li><a href="#" className="hover:text-white transition-colors flex items-center gap-2"><span className="text-zinc-600 text-[10px]">▶</span> Termos de Uso</a></li>
               </ul>
             </div>
 
-            <div className="space-y-6 md:col-span-2">
-              <h4 className="text-secondary-dynamic font-black uppercase text-xs tracking-widest italic">Jogo Responsável</h4>
-              <div className="flex gap-3 items-center">
-                <div className="w-10 h-10 border border-zinc-900 rounded-lg flex items-center justify-center text-zinc-600 font-black text-xs">
+            {/* 3. Jogo Responsável */}
+            <div className="space-y-6">
+              <h4 className="text-white font-black uppercase text-sm tracking-widest flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#FBBF24] shadow-[0_0_8px_rgba(251,191,36,0.6)]"></span>
+                Jogo Responsável
+              </h4>
+              <div className="flex gap-4 items-start">
+                <div className="w-12 h-12 shrink-0 border border-zinc-800 rounded-xl flex items-center justify-center text-zinc-400 font-black text-sm bg-zinc-900/50 shadow-inner">
                   18+
                 </div>
+                <p className="text-xs text-zinc-400 leading-relaxed font-medium">
+                  As apostas podem causar dependência psicológica e perda financeira. Jogue com moderação e apenas com valores que não farão falta no seu orçamento. Procure ajuda se necessário.
+                </p>
               </div>
-              <p className="text-[9px] text-zinc-750 leading-tight uppercase font-black max-w-sm">
-                As apostas podem causar dependência. Jogue com moderação. Os sinais são baseados em probabilidades estatísticas.
-              </p>
+            </div>
+
+            {/* 4. Aviso Legal */}
+            <div className="space-y-6">
+              <h4 className="text-white font-black uppercase text-sm tracking-widest flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"></span>
+                Aviso Legal
+              </h4>
+              <ul className="space-y-3 text-xs text-zinc-400 leading-relaxed font-medium">
+                <li className="flex gap-2"><span className="text-red-500 font-bold">✗</span> Não garantimos lucros ou ganhos.</li>
+                <li className="flex gap-2"><span className="text-red-500 font-bold">✗</span> Não operamos plataformas de apostas.</li>
+                <li className="flex gap-2"><span className="text-primary-dynamic font-bold">✓</span> Somos uma ferramenta de análise estatística.</li>
+                <li className="flex gap-2"><span className="text-[#FBBF24] font-bold">!</span> A responsabilidade de uso é exclusiva do usuário.</li>
+              </ul>
             </div>
           </div>
 
-          <div className="pt-8 border-t border-white/5 flex justify-between items-center">
-            <p className="text-zinc-800 text-[9px] font-black uppercase tracking-widest">
-              © 2026 {aparencia?.nome_site?.toUpperCase() || "SLOT DA SORTE"} - TODOS OS DIREITOS RESERVADOS
+          <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
+            <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">
+              © 2026 {aparencia?.nome_site?.toUpperCase() || "SLOT DA SORTE"}. TODOS OS DIREITOS RESERVADOS.
             </p>
+            <div className="text-zinc-600 text-[10px] font-bold tracking-widest uppercase flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block"></span>
+              Proibido para menores de 18 anos
+            </div>
           </div>
         </div>
       </footer>
