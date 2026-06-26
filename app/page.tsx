@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { FaWhatsapp, FaHome, FaInstagram, FaTelegram } from "react-icons/fa";
+import { ShieldCheck, RefreshCw, Smartphone, Activity, Play } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 const CONFIG = {
@@ -697,8 +698,8 @@ export default function Home() {
                       })()}
                     </div>
 
-                    <div className="w-full text-white font-black py-3 rounded-[22px] text-xs uppercase mt-1 shadow-xl hover:bg-white hover:text-black transition-all flex items-center justify-center btn-play-dynamic cursor-pointer">
-                      Jogar ▶
+                    <div className="w-[94%] mx-auto text-white font-bold text-[16px] py-2.5 rounded-full mt-2 mb-1 shadow-[0_4px_12px_rgba(22,163,74,0.25)] bg-gradient-to-b from-[#22C55E] to-[#16A34A] hover:brightness-110 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200 ease-out flex items-center justify-center gap-2 cursor-pointer">
+                      Jogar <Play size={14} className="fill-white text-white" />
                     </div>
                   </div>
                 </a>
@@ -708,16 +709,16 @@ export default function Home() {
         </div>
       </section>
 
-      {/* --- FOOTER --- */}
-      <footer className="bg-[#050505] border-t border-white/10 pt-20 pb-8 px-6 relative overflow-hidden mt-10">
-        {/* Glow de fundo para visual premium */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-[1px] bg-gradient-to-r from-transparent via-primary-dynamic to-transparent opacity-50" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-[40px] bg-primary-dynamic blur-[80px] opacity-10" />
-
+      {/* --- FOOTER PREMIUM --- */}
+      <footer className="bg-[#060606] border-t border-primary-alpha pt-16 pb-8 px-6 relative mt-10" style={{ borderTop: '1px solid rgba(22,163,74,.25)' }}>
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }}></div>
+        
         <div className="max-w-[1500px] mx-auto relative z-10">
+          
+          {/* PRIMEIRA LINHA */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8 mb-16">
             
-            {/* 1. Marca */}
+            {/* COLUNA 1 */}
             <div className="space-y-6">
               <div className="flex items-center gap-3">
                 <img src={aparencia?.logo_url || CONFIG.logo} alt="Logo" className="w-10 h-10 object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.15)]" />
@@ -733,66 +734,150 @@ export default function Home() {
                 </h1>
               </div>
               <p className="text-zinc-400 text-sm leading-relaxed">
-                {aparencia?.subtitulo_home || "Plataforma líder em análise e sinais estatísticos para slots. Ferramenta premium desenvolvida para jogadores em busca de resultados embasados."}
+                A plataforma de sinais mais confiável para jogadores de slots.
               </p>
-            </div>
-
-            {/* 2. Links */}
-            <div className="space-y-6 lg:pl-8">
-              <h4 className="text-white font-black uppercase text-sm tracking-widest flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary-dynamic shadow-[0_0_8px_var(--primary-glow)]"></span>
-                Links Úteis
-              </h4>
-              <ul className="space-y-3 text-zinc-400 text-sm font-medium">
-                <li><a href="#" className="hover:text-primary-dynamic transition-colors flex items-center gap-2"><span className="text-primary-dynamic/50 text-[10px]">▶</span> Sinais ao Vivo</a></li>
-                <li><a href={configSite?.whatsapp || "#"} target="_blank" className="hover:text-primary-dynamic transition-colors flex items-center gap-2"><span className="text-primary-dynamic/50 text-[10px]">▶</span> Grupo VIP</a></li>
-                <li><a href={configSite?.instagram || "#"} target="_blank" className="hover:text-primary-dynamic transition-colors flex items-center gap-2"><span className="text-primary-dynamic/50 text-[10px]">▶</span> Instagram</a></li>
-                <li><a href={configSite?.telegram || "#"} target="_blank" className="hover:text-primary-dynamic transition-colors flex items-center gap-2"><span className="text-primary-dynamic/50 text-[10px]">▶</span> Telegram</a></li>
-                <li><a href="#" className="hover:text-white transition-colors flex items-center gap-2 mt-4"><span className="text-zinc-600 text-[10px]">▶</span> Política de Privacidade</a></li>
-                <li><a href="#" className="hover:text-white transition-colors flex items-center gap-2"><span className="text-zinc-600 text-[10px]">▶</span> Termos de Uso</a></li>
-              </ul>
-            </div>
-
-            {/* 3. Jogo Responsável */}
-            <div className="space-y-6">
-              <h4 className="text-white font-black uppercase text-sm tracking-widest flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#FBBF24] shadow-[0_0_8px_rgba(251,191,36,0.6)]"></span>
-                Jogo Responsável
-              </h4>
-              <div className="flex gap-4 items-start">
-                <div className="w-12 h-12 shrink-0 border border-zinc-800 rounded-xl flex items-center justify-center text-zinc-400 font-black text-sm bg-zinc-900/50 shadow-inner">
-                  18+
+              
+              <div className="bg-[#0a0a0a] border border-white/5 rounded-xl p-4 flex items-start gap-4 mt-6">
+                <div className="bg-primary-dynamic/10 p-2 rounded-lg text-primary-dynamic mt-1">
+                  <ShieldCheck size={20} />
                 </div>
-                <p className="text-xs text-zinc-400 leading-relaxed font-medium">
-                  As apostas podem causar dependência psicológica e perda financeira. Jogue com moderação e apenas com valores que não farão falta no seu orçamento. Procure ajuda se necessário.
-                </p>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h4 className="text-white text-sm font-bold">SINAIS EM TEMPO REAL</h4>
+                    <span className="bg-primary-dynamic/20 text-primary-dynamic text-[9px] font-bold px-2 py-0.5 rounded-full border border-primary-dynamic/30">ONLINE</span>
+                  </div>
+                  <p className="text-zinc-500 text-xs">Atualizações automáticas durante todo o dia.</p>
+                </div>
               </div>
             </div>
 
-            {/* 4. Aviso Legal */}
+            {/* COLUNA 2 */}
+            <div className="space-y-6 lg:pl-8">
+              <h4 className="text-white font-black uppercase text-sm tracking-widest flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-zinc-600"></span>
+                LINKS ÚTEIS
+              </h4>
+              <ul className="space-y-3 text-zinc-400 text-sm font-medium">
+                <li><a href="#" className="hover:text-primary-dynamic transition-colors block">Home</a></li>
+                <li><a href="#" className="hover:text-primary-dynamic transition-colors block">Sinais ao Vivo</a></li>
+                <li><a href={configSite?.whatsapp || "#"} target="_blank" className="hover:text-primary-dynamic transition-colors block">Grupo VIP</a></li>
+                <li><a href={configSite?.instagram || "#"} target="_blank" className="hover:text-primary-dynamic transition-colors block">Instagram</a></li>
+                <li><a href={configSite?.telegram || "#"} target="_blank" className="hover:text-primary-dynamic transition-colors block">Telegram</a></li>
+                <li className="pt-2"><a href="#" className="hover:text-primary-dynamic transition-colors block">Política de Privacidade</a></li>
+                <li><a href="#" className="hover:text-primary-dynamic transition-colors block">Termos de Uso</a></li>
+              </ul>
+            </div>
+
+            {/* COLUNA 3 */}
             <div className="space-y-6">
               <h4 className="text-white font-black uppercase text-sm tracking-widest flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"></span>
-                Aviso Legal
+                <span className="w-1.5 h-1.5 rounded-full bg-zinc-600"></span>
+                JOGO RESPONSÁVEL
               </h4>
-              <ul className="space-y-3 text-xs text-zinc-400 leading-relaxed font-medium">
-                <li className="flex gap-2"><span className="text-red-500 font-bold">✗</span> Não garantimos lucros ou ganhos.</li>
-                <li className="flex gap-2"><span className="text-red-500 font-bold">✗</span> Não operamos plataformas de apostas.</li>
-                <li className="flex gap-2"><span className="text-primary-dynamic font-bold">✓</span> Somos uma ferramenta de análise estatística.</li>
-                <li className="flex gap-2"><span className="text-[#FBBF24] font-bold">!</span> A responsabilidade de uso é exclusiva do usuário.</li>
+              <div className="flex gap-4 items-start">
+                <div className="w-10 h-10 shrink-0 border border-zinc-800 rounded-lg flex items-center justify-center text-zinc-400 font-black text-xs bg-[#0a0a0a]">
+                  18+
+                </div>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  As apostas podem causar dependência.<br />
+                  Jogue com responsabilidade.<br />
+                  Utilize apenas valores destinados ao entretenimento.
+                </p>
+              </div>
+              <div className="bg-[#1a110b] border border-[#2a1b12] rounded-xl p-4 mt-4">
+                <h5 className="text-white/90 text-sm font-bold mb-1">Precisa de ajuda?</h5>
+                <p className="text-zinc-400 text-xs mb-2">Centro de Valorização da Vida</p>
+                <div className="text-orange-500/90 font-black text-lg">Disque 188</div>
+              </div>
+            </div>
+
+            {/* COLUNA 4 */}
+            <div className="space-y-6">
+              <h4 className="text-white font-black uppercase text-sm tracking-widest flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-zinc-600"></span>
+                AVISO LEGAL
+              </h4>
+              <ul className="space-y-3 text-xs text-zinc-400 leading-relaxed">
+                <li className="flex items-start gap-2"><span className="text-red-500 font-bold shrink-0 mt-0.5">❌</span> Não garantimos lucros.</li>
+                <li className="flex items-start gap-2"><span className="text-red-500 font-bold shrink-0 mt-0.5">❌</span> Não operamos plataformas.</li>
+                <li className="flex items-start gap-2"><span className="text-primary-dynamic font-bold shrink-0 mt-0.5">✅</span> Somos uma plataforma de sinais online.</li>
+                <li className="flex items-start gap-2"><span className="text-yellow-500 font-bold shrink-0 mt-0.5">⚠️</span> O uso é de responsabilidade exclusiva do usuário.</li>
               </ul>
+            </div>
+
+          </div>
+
+          {/* SEGUNDA LINHA: DIFERENCIAIS */}
+          <div className="border-t border-white/5 py-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 divide-y sm:divide-y-0 sm:divide-x divide-white/5">
+              
+              <div className="flex items-center gap-4 sm:px-6 first:pl-0 pt-4 sm:pt-0 first:pt-0">
+                <div className="text-primary-dynamic bg-primary-dynamic/10 p-2.5 rounded-lg"><ShieldCheck size={20} /></div>
+                <div>
+                  <h5 className="text-white text-sm font-bold">Site Seguro</h5>
+                  <p className="text-zinc-500 text-xs">Conexão protegida por HTTPS e navegação segura.</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4 sm:px-6 pt-4 sm:pt-0">
+                <div className="text-primary-dynamic bg-primary-dynamic/10 p-2.5 rounded-lg"><RefreshCw size={20} /></div>
+                <div>
+                  <h5 className="text-white text-sm font-bold">Atualização Contínua</h5>
+                  <p className="text-zinc-500 text-xs">Sinais renovados automaticamente ao longo do dia.</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4 sm:px-6 pt-4 sm:pt-0">
+                <div className="text-primary-dynamic bg-primary-dynamic/10 p-2.5 rounded-lg"><Smartphone size={20} /></div>
+                <div>
+                  <h5 className="text-white text-sm font-bold">Compatível com Celular</h5>
+                  <p className="text-zinc-500 text-xs">Acesse a plataforma em qualquer dispositivo.</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4 sm:px-6 pt-4 sm:pt-0">
+                <div className="text-primary-dynamic bg-primary-dynamic/10 p-2.5 rounded-lg"><Activity size={20} /></div>
+                <div>
+                  <h5 className="text-white text-sm font-bold flex items-center gap-1.5">
+                    Sistema Online
+                    <span className="flex items-center gap-1 bg-green-500/10 text-green-500 border border-green-500/20 px-1.5 py-0.5 rounded-full text-[9px] uppercase tracking-wider font-bold ml-1">
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-1 w-1 bg-green-500 mx-auto mt-[1px]"></span>
+                      </span>
+                      Online
+                    </span>
+                  </h5>
+                  <p className="text-zinc-500 text-xs">Disponível 24 horas por dia.</p>
+                </div>
+              </div>
+
             </div>
           </div>
 
-          <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
-            <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">
-              © 2026 {aparencia?.nome_site?.toUpperCase() || "SLOT DA SORTE"}. TODOS OS DIREITOS RESERVADOS.
-            </p>
-            <div className="text-zinc-600 text-[10px] font-bold tracking-widest uppercase flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block"></span>
-              Proibido para menores de 18 anos
+          {/* TERCEIRA LINHA: COPYRIGHT & SOCIAIS */}
+          <div className="border-t border-white/5 pt-8 flex flex-col lg:flex-row items-center justify-between gap-6 text-center lg:text-left">
+            <div className="text-zinc-500 text-xs font-medium">
+              © 2026 Slot da Sorte. Todos os direitos reservados.
+            </div>
+            
+            <div className="text-zinc-500 text-xs font-medium">
+              Desenvolvido com <span className="text-red-500">❤️</span> para a comunidade.
+            </div>
+
+            <div className="flex items-center gap-4">
+              <a href={configSite?.instagram || "#"} target="_blank" className="text-zinc-500 hover:text-primary-dynamic transition-colors">
+                <FaInstagram size={20} />
+              </a>
+              <a href={configSite?.telegram || "#"} target="_blank" className="text-zinc-500 hover:text-primary-dynamic transition-colors">
+                <FaTelegram size={20} />
+              </a>
+              <a href={configSite?.whatsapp || "#"} target="_blank" className="text-zinc-500 hover:text-primary-dynamic transition-colors">
+                <FaWhatsapp size={20} />
+              </a>
             </div>
           </div>
+
         </div>
       </footer>
 
