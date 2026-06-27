@@ -653,7 +653,7 @@ export default function Home() {
 
                     {/* BOX DE APOSTAS */}
                     <div className="bg-black/20 rounded-[24px] p-3 border border-white/5 space-y-3 mt-auto">
-                      <p className="text-secondary-dynamic text-[10px] font-bold uppercase text-center">
+                      <p className="text-[#FFC801] text-[10px] font-bold uppercase text-center">
                         Apostas
                       </p>
 
@@ -663,34 +663,34 @@ export default function Home() {
                         return (
                           <div className="space-y-3">
                             <div className="space-y-1 text-[10px] font-black text-white uppercase tracking-tighter">
-                              <p className="text-center text-[10px] mb-1 tracking-widest text-zinc-500">MÍNIMA</p>
+                              <p className="text-center text-[10px] mb-1 tracking-widest text-white">MÍNIMA</p>
                               <div className="flex justify-between items-center">
-                                <span>Bônus:</span>
-                                <span className="bg-primary-dynamic text-black px-2 py-0.5 rounded-md font-bold">{s.bonus}</span>
+                                <span>Bônus</span>
+                                <span className="bg-[#16A34A] text-white px-2 py-0.5 rounded-md font-bold">{s.bonus}</span>
                               </div>
                               <div className="flex justify-between items-center">
-                                <span>Conexão:</span>
-                                <span className="bg-primary-dynamic text-black px-2 py-0.5 rounded-md font-bold">{s.conexao}</span>
+                                <span>Conexão</span>
+                                <span className="bg-[#16A34A] text-white px-2 py-0.5 rounded-md font-bold">{s.conexao}</span>
                               </div>
                               <div className="flex justify-between items-center">
-                                <span>Bet Extra:</span>
-                                <span className="bg-primary-dynamic text-black px-2 py-0.5 rounded-md font-bold">{s.extra}</span>
+                                <span>Bet Extra</span>
+                                <span className="bg-[#16A34A] text-white px-2 py-0.5 rounded-md font-bold">{s.extra}</span>
                               </div>
                             </div>
 
                             <div className="space-y-1 pt-1 border-t border-white/5">
-                              <p className="text-center text-[10px] font-black uppercase tracking-widest text-zinc-500">PADRÃO</p>
+                              <p className="text-center text-[10px] font-black uppercase tracking-widest text-white">PADRÃO</p>
                               <div className="grid grid-cols-2 gap-2">
-                                <div className="bg-primary-dynamic text-black text-center py-1.5 rounded-lg text-[11px] font-black">{s.p1}</div>
-                                <div className="bg-primary-dynamic text-black text-center py-1.5 rounded-lg text-[11px] font-black">{s.p2}</div>
+                                <div className="bg-[#16A34A] text-white text-center py-1.5 rounded-lg text-[11px] font-black">{s.p1}</div>
+                                <div className="bg-[#16A34A] text-white text-center py-1.5 rounded-lg text-[11px] font-black">{s.p2}</div>
                               </div>
                             </div>
 
                             <div className="space-y-1 pt-1 border-t border-white/5">
-                              <p className="text-center text-[10px] font-black uppercase tracking-widest text-zinc-500">MÁXIMA</p>
+                              <p className="text-center text-[10px] font-black uppercase tracking-widest text-white">MÁXIMA</p>
                               <div className="grid grid-cols-2 gap-2">
-                                <div className="bg-primary-dynamic text-black text-center py-1.5 rounded-lg text-[11px] font-black">{s.m1}</div>
-                                <div className="bg-primary-dynamic text-black text-center py-1.5 rounded-lg text-[11px] font-black">{s.m2}</div>
+                                <div className="bg-[#16A34A] text-white text-center py-1.5 rounded-lg text-[11px] font-black">{s.m1}</div>
+                                <div className="bg-[#16A34A] text-white text-center py-1.5 rounded-lg text-[11px] font-black">{s.m2}</div>
                               </div>
                             </div>
                           </div>
