@@ -444,7 +444,28 @@ export default function Home() {
   }, [busca, categoriaAtiva, jogos, favoritos]);
 
   if (!montado) {
-    return <div className="w-full h-screen bg-black" />;
+    return (
+      <div 
+        className="w-full h-screen flex flex-col items-center justify-center font-sans"
+        style={{ background: "radial-gradient(circle at center, rgba(0,255,102,0.18), #020806 60%, #000 100%)" }}
+      >
+        <div className="relative flex items-center justify-center w-32 h-32 rounded-full border border-[rgba(0,255,102,0.3)] shadow-[0_0_30px_rgba(0,255,102,0.15)] mb-8 animate-pulse">
+          <img
+            src={aparencia?.logo_url || "/logo.webp"}
+            alt="Loading..."
+            className="w-20 h-20 object-contain drop-shadow-[0_0_15px_rgba(0,255,102,0.4)]"
+          />
+          <div className="absolute inset-0 rounded-full border-t-2 border-[#00FF66] animate-spin opacity-70"></div>
+        </div>
+        
+        <h2 className="text-white text-2xl font-black uppercase tracking-widest mb-2">
+          Carregando sinais...
+        </h2>
+        <p className="text-zinc-400 text-sm font-medium text-center px-4">
+          Preparando os melhores jogos do momento
+        </p>
+      </div>
+    );
   }
 
   const primaryHex = aparencia?.cor_primaria || "#16A34A";
