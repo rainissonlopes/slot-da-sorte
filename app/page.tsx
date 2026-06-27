@@ -14,6 +14,9 @@ const CACHE_KEY = "slotCards";
 const CICLO_SEGUNDOS = 300;
 const CICLO_MS = CICLO_SEGUNDOS * 1000;
 
+type EstadoJogo = "Frio" | "Neutro" | "Aquecendo" | "Quente";
+type TendenciaJogo = "Subindo" | "Estável" | "Caindo";
+
 type Jogo = {
   id: number | string;
   nome: string;
@@ -26,6 +29,9 @@ type Jogo = {
   link: string;
   bets: string[];
   imagemUrl?: string;
+  estado?: EstadoJogo;
+  tendencia?: TendenciaJogo;
+  volatilidade?: number;
 };
 
 const calcularSugestoes = (bets: string[]) => {
@@ -55,6 +61,115 @@ const calcularSugestoes = (bets: string[]) => {
 const limitar = (valor: number, min: number, max: number) => {
   return Math.min(max, Math.max(min, valor));
 };
+
+const LIMITES_ESTADO = {
+  Frio: { dist: [35, 65], min: [10, 35], pad: [15, 45], max: [20, 55] },
+  Neutro: { dist: [55, 80], min: [25, 60], pad: [35, 70], max: [30, 75] },
+  Aquecendo: { dist: [70, 92], min: [45, 80], pad: [55, 85], max: [50, 90] },
+  Quente: { dist: [85, 98], min: [70, 98], pad: [65, 96], max: [60, 98] },
+};
+
+function obterPersonalidade(nome: string) {
+  const nomeLower = nome.toLowerCase();
+  let chanceQuente = 0;
+  let volatilidade = Math.floor(Math.random() * 2) + 1;
+
+  const palavrasQuentes = ["fortune", "tiger", "dragon", "ox", "rabbit", "mouse", "mahjong", "ways", "gold", "bonanza"];
+  const palavrasVolateis = ["doomsday", "rampage", "wild", "mystery", "chaos", "halloween"];
+
+  if (palavrasQuentes.some((p) => nomeLower.includes(p))) {
+    chanceQuente = 40;
+  }
+  if (palavrasVolateis.some((p) => nomeLower.includes(p))) {
+    volatilidade = Math.floor(Math.random() * 3) + 3;
+  }
+
+  return { chanceQuente, volatilidade };
+}
+
+function randomInRange(min: number, max: number) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function gerarEstadoInicial(nome: string): { estado: EstadoJogo, tendencia: TendenciaJogo, dist: number, min: number, pad: number, max: number, volatilidade: number } {
+  const { chanceQuente, volatilidade } = obterPersonalidade(nome);
+  const rand = Math.random() * 100;
+  
+  let estado: EstadoJogo = "Neutro";
+  
+  if (chanceQuente > 0) {
+    if (rand < 5) estado = "Frio";
+    else if (rand < 25) estado = "Neutro";
+    else if (rand < 75) estado = "Aquecendo";
+    else estado = "Quente";
+  } else {
+    if (rand < 15) estado = "Frio";
+    else if (rand < 60) estado = "Neutro";
+    else if (rand < 90) estado = "Aquecendo";
+    else estado = "Quente";
+  }
+
+  const tendncias: TendenciaJogo[] = ["Subindo", "Estável", "Caindo"];
+  const tendencia = tendncias[Math.floor(Math.random() * tendncias.length)];
+  const limites = LIMITES_ESTADO[estado];
+
+  return {
+    estado,
+    tendencia,
+    dist: randomInRange(limites.dist[0], limites.dist[1]),
+    min: randomInRange(limites.min[0], limites.min[1]),
+    pad: randomInRange(limites.pad[0], limites.pad[1]),
+    max: randomInRange(limites.max[0], limites.max[1]),
+    volatilidade
+  };
+}
+
+function evoluirValores(jogo: Jogo): Jogo {
+  if (!jogo.estado || !jogo.tendencia || !jogo.volatilidade) {
+    const init = gerarEstadoInicial(jogo.nome);
+    return { ...jogo, ...init };
+  }
+
+  let { estado, tendencia, volatilidade, dist, min, pad, max } = jogo;
+
+  if (Math.random() < 0.10) {
+    const tendncias: TendenciaJogo[] = ["Subindo", "Estável", "Caindo"];
+    tendencia = tendncias[Math.floor(Math.random() * tendncias.length)];
+  }
+
+  const varRange = volatilidade;
+  const gerarVariacao = () => {
+    let delta = 0;
+    if (tendencia === "Subindo") delta = randomInRange(0, varRange);
+    else if (tendencia === "Caindo") delta = randomInRange(-varRange, 0);
+    else delta = randomInRange(-Math.ceil(varRange/2), Math.ceil(varRange/2));
+    return delta;
+  };
+
+  dist = limitar(dist + gerarVariacao(), LIMITES_ESTADO[estado].dist[0], LIMITES_ESTADO[estado].dist[1]);
+  min = limitar(min + gerarVariacao(), LIMITES_ESTADO[estado].min[0], LIMITES_ESTADO[estado].min[1]);
+  pad = limitar(pad + gerarVariacao(), LIMITES_ESTADO[estado].pad[0], LIMITES_ESTADO[estado].pad[1]);
+  max = limitar(max + gerarVariacao(), LIMITES_ESTADO[estado].max[0], LIMITES_ESTADO[estado].max[1]);
+
+  const estadosOrder: EstadoJogo[] = ["Frio", "Neutro", "Aquecendo", "Quente"];
+  const currentIndex = estadosOrder.indexOf(estado);
+
+  if (tendencia === "Subindo" && dist >= LIMITES_ESTADO[estado].dist[1] - (varRange+1) && currentIndex < 3) {
+    if (Math.random() < 0.3) estado = estadosOrder[currentIndex + 1];
+  } else if (tendencia === "Caindo" && dist <= LIMITES_ESTADO[estado].dist[0] + (varRange+1) && currentIndex > 0) {
+    if (Math.random() < 0.3) estado = estadosOrder[currentIndex - 1];
+  }
+
+  return { ...jogo, estado, tendencia, dist, min, pad, max };
+}
+
+function hashString(str: string) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = Math.imul(31, hash) + str.charCodeAt(i) | 0;
+  }
+  return hash;
+}
 
 function hexToRgb(hex: string) {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -224,20 +339,15 @@ export default function Home() {
         throw sinaisError;
       }
 
+      const currentTimestamp = cacheValido ? cacheTimestamp : Date.now();
+
       const jogosFormatados: Jogo[] = (sinaisData || [])
         .map((j: any, index: number) => {
           const cachedGame = cacheValido
             ? cacheJogos.find((cg) => String(cg.id) === String(j.id))
             : null;
 
-          const minima = cachedGame ? cachedGame.min : Math.floor(Math.random() * 29) + 70;
-          const padrao = cachedGame ? cachedGame.pad : Math.floor(Math.random() * 41) + 45;
-          const maxima = cachedGame ? cachedGame.max : Math.floor(Math.random() * 46) + 25;
-          const distribuicao = cachedGame
-            ? cachedGame.dist
-            : limitar(Math.floor(minima + Math.random() * 12 - 4), 35, 98);
-
-          return {
+          let baseGame: Jogo = {
             id: j.id,
             nome: j.nome_jogo,
             cat: (j.categoria_jogo === "PG"
@@ -245,17 +355,35 @@ export default function Home() {
               : j.categoria_jogo === "PP"
                 ? "PP Games"
                 : "WG Games") as "PG Games" | "PP Games" | "WG Games",
-            dist: distribuicao,
-            min: minima,
-            pad: padrao,
-            max: maxima,
+            dist: 0, min: 0, pad: 0, max: 0,
             cor: j.cor_background || "#1c1c1e",
             link: plataformas.length > 0 ? plataformas[index % plataformas.length].link : "#",
             bets: j.bets || [],
             imagemUrl: j.imagem_url,
           };
+
+          if (cachedGame) {
+            baseGame.dist = cachedGame.dist;
+            baseGame.min = cachedGame.min;
+            baseGame.pad = cachedGame.pad;
+            baseGame.max = cachedGame.max;
+            baseGame.estado = cachedGame.estado;
+            baseGame.tendencia = cachedGame.tendencia;
+            baseGame.volatilidade = cachedGame.volatilidade;
+
+            baseGame = evoluirValores(baseGame);
+          } else {
+            const init = gerarEstadoInicial(j.nome_jogo);
+            baseGame = { ...baseGame, ...init };
+          }
+
+          return baseGame;
         })
-        .sort((a, b) => b.dist - a.dist)
+        .sort((a, b) => {
+          const hashA = hashString(a.id.toString() + currentTimestamp.toString());
+          const hashB = hashString(b.id.toString() + currentTimestamp.toString());
+          return hashA - hashB;
+        })
         .slice(0, 250);
 
       const horaAtualizacao = cacheValido && dadosSalvos
@@ -267,7 +395,7 @@ export default function Home() {
         JSON.stringify({
           jogos: jogosFormatados,
           ultimaAtualizacao: horaAtualizacao,
-          timestamp: cacheValido ? cacheTimestamp : Date.now(),
+          timestamp: currentTimestamp,
         })
       );
 
