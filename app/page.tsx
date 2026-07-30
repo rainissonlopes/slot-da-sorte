@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { FaWhatsapp } from "react-icons/fa";
-import { AlertCircle, RotateCcw, X } from "lucide-react";
+import { AlertCircle, LayoutGrid, RotateCcw, X } from "lucide-react";
 import { GameFilters } from "@/components/signals/GameFilters";
 import { GamesGrid } from "@/components/signals/GamesGrid";
 import { PromotionalBanner } from "@/components/signals/PromotionalBanner";
 import { RecommendedPlatforms } from "@/components/signals/RecommendedPlatforms";
+import { SectionHeading } from "@/components/signals/SectionHeading";
 import { SiteFooter } from "@/components/signals/SiteFooter";
 import { SiteHeader } from "@/components/signals/SiteHeader";
 import { TrendingGames } from "@/components/signals/TrendingGames";
@@ -169,6 +170,14 @@ function hexToRgb(hex: string) {
   return result
     ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
     : "22, 163, 74";
+}
+
+function normalizeExternalLink(value?: string) {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  const phone = trimmed.replace(/\D/g, "");
+  return phone.length >= 10 ? `https://wa.me/${phone}` : undefined;
 }
 
 export default function Home() {
@@ -468,12 +477,24 @@ export default function Home() {
       <div className="fixed-bg" />
       <SiteHeader aparencia={aparencia} whatsapp={configSite?.whatsapp} />
       <div className="mx-auto max-w-7xl space-y-14 px-4 py-6 sm:space-y-20 sm:px-6 sm:py-10">
-        <PromotionalBanner aparencia={aparencia} href={plataformas[0]?.link} />
+        <PromotionalBanner
+          desktopImageUrl="/banners/whatsapp-v2.webp"
+          fallbackImageUrl={aparencia?.banner_principal_url}
+          href={normalizeExternalLink(configSite?.whatsapp) || normalizeExternalLink(configSite?.popup_link)}
+          target="_blank"
+          active
+          alt={`Campanha ${aparencia?.nome_site || "da plataforma"}`}
+        />
         <RecommendedPlatforms plataformas={plataformas} />
-        <div id="jogos-em-alta"><TrendingGames jogos={jogosEmAlta} favoritos={favoritos} onFavorito={toggleFavorito} calcularSugestoes={calcularSugestoes} /></div>
+        <div id="jogos-em-alta"><TrendingGames jogos={jogosEmAlta} /></div>
         <GameFilters busca={busca} onBusca={setBusca} categorias={categorias} categoriaAtiva={categoriaAtiva} onCategoria={setCategoriaAtiva} />
-        <section id="todos-os-jogos" aria-labelledby="all-games-title">
-          <div className="section-heading"><div><span className="eyebrow">Catálogo completo</span><h2 id="all-games-title">Todos os jogos</h2></div><p>Atualizado às {ultimaAtualizacao} · próximo ciclo em {proximaAtualizacao}s</p></div>
+        <section id="todos-os-jogos" aria-label="Todos os jogos">
+          <SectionHeading
+            icon={<LayoutGrid aria-hidden="true" />}
+            eyebrow="Catálogo completo"
+            title="Todos os jogos"
+            description={`Atualizado às ${ultimaAtualizacao} · próximo ciclo em ${proximaAtualizacao}s`}
+          />
           <GamesGrid jogos={filtrados} favoritos={favoritos} onFavorito={toggleFavorito} calcularSugestoes={calcularSugestoes} emptyText={jogos.length === 0 ? "Carregamento concluído, mas nenhum jogo está disponível no momento." : "Nenhum jogo corresponde à busca ou ao filtro selecionado."} />
         </section>
         <WhatsAppBanner whatsapp={configSite?.whatsapp} />

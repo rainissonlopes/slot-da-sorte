@@ -117,13 +117,6 @@ input {
   border-color: rgb(59 130 246 / 0.25);
 }
 
-.platform-logo-card {
-  border: 1px solid rgb(255 255 255 / 0.09);
-  border-radius: 1.25rem;
-  background: color-mix(in srgb, var(--tenant-surface) 92%, black);
-  box-shadow: 0 12px 30px rgb(0 0 0 / 0.15);
-}
-
 .game-card-title {
   display: -webkit-box;
   overflow: hidden;
@@ -138,6 +131,39 @@ input {
 .signal-card:hover {
   border-color: color-mix(in srgb, var(--tenant-primary) 38%, transparent);
   transform: translateY(-2px);
+}
+
+.carousel-arrow {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 999px;
+  background: var(--tenant-surface);
+  color: white;
+}
+
+.carousel-arrow:hover {
+  border-color: var(--tenant-primary);
+  color: var(--tenant-primary);
+}
+
+.trending-track {
+  scrollbar-width: none;
+}
+
+.trending-track::-webkit-scrollbar {
+  display: none;
+}
+
+.platforms-track {
+  scrollbar-width: none;
+  touch-action: pan-x;
+}
+
+.platforms-track::-webkit-scrollbar {
+  display: none;
 }
 
 .signal-button {

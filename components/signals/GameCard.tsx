@@ -1,4 +1,5 @@
 import { ArrowUpRight, Flame, Heart, Minus, Snowflake, TrendingDown, TrendingUp } from "lucide-react";
+import { applyGameImageFallback, resolveGameImage } from "@/lib/signals/resolve-game-image";
 import type { Jogo, SugestoesAposta } from "@/lib/signals/types";
 
 const barInfo = [
@@ -14,20 +15,32 @@ export function GameCard({ jogo, favorito, onFavorito, calcularSugestoes }: {
   const sugestoes = calcularSugestoes(jogo.bets);
   const StateIcon = jogo.estado === "Quente" ? Flame : jogo.estado === "Frio" ? Snowflake : Minus;
   const TrendIcon = jogo.tendencia === "Subindo" ? TrendingUp : jogo.tendencia === "Caindo" ? TrendingDown : Minus;
+  const imageUrl = resolveGameImage({
+    rawImageUrl: jogo.imagemUrl,
+    gameId: jogo.id,
+    category: jogo.cat,
+  });
   return (
     <article className="signal-card group" data-state={jogo.estado || "Neutro"}>
       <div className="flex flex-1 flex-col p-2.5 sm:p-3">
-        <div className="flex min-w-0 items-start gap-2">
-          <div className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl border border-white/10 bg-white/5 sm:h-12 sm:w-12">
-            <img src={jogo.imagemUrl || "/placeholder.webp"} alt="" className="h-full w-full object-cover" onError={(event) => { event.currentTarget.src = "/placeholder.webp"; }} />
+        <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-white/10 bg-white/5">
+          <img src={imageUrl} alt={jogo.nome} className="h-full w-full object-cover" onError={(event) => applyGameImageFallback(event.currentTarget)} />
+          <div className="absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/90 to-transparent px-2 pb-2 pt-7">
+            <span className="text-[9px] font-bold text-white/75 sm:text-[10px]">Distribuição</span>
+            <strong className="text-sm font-black text-emerald-400 sm:text-base">{jogo.dist}%</strong>
           </div>
-          <div className="min-w-0 flex-1">
+          <button onClick={() => onFavorito(String(jogo.id))} aria-label={favorito ? "Remover dos favoritos" : "Adicionar aos favoritos"} className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full border border-white/15 bg-black/65 backdrop-blur-sm">
+            <Heart size={13} fill={favorito ? "currentColor" : "none"} className={favorito ? "text-red-400" : "text-white"} />
+          </button>
+        </div>
+        <div className="flex min-w-0 items-start gap-2">
+          <div className="mt-2.5 grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-lg border border-white/10 bg-white/5 sm:h-10 sm:w-10">
+            <img src={imageUrl} alt={`Miniatura de ${jogo.nome}`} className="h-full w-full object-cover" onError={(event) => applyGameImageFallback(event.currentTarget)} />
+          </div>
+          <div className="mt-2.5 min-w-0 flex-1">
             <h3 className="game-card-title font-black">{jogo.nome}</h3>
             <p className="mt-0.5 truncate text-[9px] font-bold uppercase tracking-wide text-[var(--tenant-muted)] sm:text-[10px]">{jogo.cat}</p>
           </div>
-          <button onClick={() => onFavorito(String(jogo.id))} aria-label={favorito ? "Remover dos favoritos" : "Adicionar aos favoritos"} className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 bg-white/5">
-            <Heart size={13} fill={favorito ? "currentColor" : "none"} className={favorito ? "text-red-400" : "text-white/70"} />
-          </button>
         </div>
         <div className="mt-2.5 grid grid-cols-2 gap-1 text-[9px] font-bold sm:text-[10px]">
           <span className="status-pill"><StateIcon size={14} />{jogo.estado || "Neutro"}</span>
