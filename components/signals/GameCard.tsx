@@ -1,0 +1,53 @@
+import { ArrowUpRight, Flame, Heart, Minus, Snowflake, TrendingDown, TrendingUp } from "lucide-react";
+import type { Jogo, SugestoesAposta } from "@/lib/signals/types";
+
+const barInfo = [
+  ["Distribuição", "dist", "bg-emerald-500"],
+  ["Mínima", "min", "bg-violet-500"],
+  ["Padrão", "pad", "bg-orange-500"],
+  ["Máxima", "max", "bg-red-500"],
+] as const;
+
+export function GameCard({ jogo, favorito, onFavorito, calcularSugestoes }: {
+  jogo: Jogo; favorito: boolean; onFavorito: (id: string) => void; calcularSugestoes: (bets: string[]) => SugestoesAposta;
+}) {
+  const sugestoes = calcularSugestoes(jogo.bets);
+  const StateIcon = jogo.estado === "Quente" ? Flame : jogo.estado === "Frio" ? Snowflake : Minus;
+  const TrendIcon = jogo.tendencia === "Subindo" ? TrendingUp : jogo.tendencia === "Caindo" ? TrendingDown : Minus;
+  return (
+    <article className="signal-card group" data-state={jogo.estado || "Neutro"}>
+      <div className="flex flex-1 flex-col p-2.5 sm:p-3">
+        <div className="flex min-w-0 items-start gap-2">
+          <div className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl border border-white/10 bg-white/5 sm:h-12 sm:w-12">
+            <img src={jogo.imagemUrl || "/placeholder.webp"} alt="" className="h-full w-full object-cover" onError={(event) => { event.currentTarget.src = "/placeholder.webp"; }} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="game-card-title font-black">{jogo.nome}</h3>
+            <p className="mt-0.5 truncate text-[9px] font-bold uppercase tracking-wide text-[var(--tenant-muted)] sm:text-[10px]">{jogo.cat}</p>
+          </div>
+          <button onClick={() => onFavorito(String(jogo.id))} aria-label={favorito ? "Remover dos favoritos" : "Adicionar aos favoritos"} className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 bg-white/5">
+            <Heart size={13} fill={favorito ? "currentColor" : "none"} className={favorito ? "text-red-400" : "text-white/70"} />
+          </button>
+        </div>
+        <div className="mt-2.5 grid grid-cols-2 gap-1 text-[9px] font-bold sm:text-[10px]">
+          <span className="status-pill"><StateIcon size={14} />{jogo.estado || "Neutro"}</span>
+          <span className="status-pill"><TrendIcon size={14} />{jogo.tendencia || "Estável"}</span>
+        </div>
+        <div className="mt-3 space-y-2">
+          {barInfo.map(([label, key, color]) => <div key={key}><div className="mb-1 flex justify-between gap-1 text-[9px] font-bold text-white/70 sm:text-[10px]"><span className="truncate">{label}</span><span>{jogo[key]}%</span></div><div className="h-1.5 overflow-hidden rounded-full bg-white/8"><div className={`h-full rounded-full ${color}`} style={{ width: `${jogo[key]}%` }} /></div></div>)}
+        </div>
+        <div className="mt-3 rounded-xl border border-white/8 bg-black/20 p-2">
+          <p className="mb-1.5 truncate text-[8px] font-black uppercase tracking-[.12em] text-[var(--tenant-muted)] sm:text-[9px]">Sugestões de aposta</p>
+          <div className="grid grid-cols-3 gap-1 text-center text-[8px] sm:text-[9px]"><Bet label="Bônus" value={sugestoes.bonus} /><Bet label="Conexão" value={sugestoes.conexao} /><Bet label="Extra" value={sugestoes.extra} /></div>
+          <div className="mt-1 grid grid-cols-2 gap-1 text-center text-[8px] sm:text-[9px]"><Bet label="Padrão" value={`${sugestoes.p1} / ${sugestoes.p2}`} /><Bet label="Máxima" value={`${sugestoes.m1} / ${sugestoes.m2}`} /></div>
+        </div>
+        {jogo.plataforma && <p className="mt-2 truncate text-[9px] text-[var(--tenant-muted)]">Em <strong className="text-white/80">{jogo.plataforma.nome}</strong></p>}
+        <a href={jogo.link} target="_blank" rel="noopener noreferrer" className="signal-button mt-2.5 w-full px-1 py-2 text-[10px] sm:text-xs">Acessar <ArrowUpRight size={14} /></a>
+      </div>
+    </article>
+  );
+}
+
+function Bet({ label, value }: { label: string; value: string }) {
+  return <div className="min-w-0 rounded-md bg-white/5 px-0.5 py-1.5"><span className="block truncate text-white/50">{label}</span><strong className="mt-0.5 block truncate text-white">{value}</strong></div>;
+}
