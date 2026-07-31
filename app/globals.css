@@ -170,6 +170,33 @@ input {
   display: none;
 }
 
+.platform-card-cell {
+  flex: 0 1 calc((100% - 0.75rem) / 2);
+}
+
+@media (min-width: 340px) {
+  .platform-card-cell {
+    flex-basis: calc((100% - 1.5rem) / 3);
+  }
+}
+
+@media (min-width: 640px) {
+  .platform-card-cell {
+    flex-basis: 125px;
+  }
+}
+
+@media (min-width: 900px) {
+  .platform-card-cell {
+    flex-basis: 116px;
+  }
+
+  .platform-new-badge {
+    padding: 0.21875rem 0.625rem;
+    font-size: 0.5625rem;
+  }
+}
+
 .signal-button {
   display: inline-flex;
   align-items: center;

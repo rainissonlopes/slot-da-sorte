@@ -1,12 +1,12 @@
 import { ArrowUpRight, Flame, Heart, Minus, Snowflake, TrendingDown, TrendingUp } from "lucide-react";
 import { applyGameImageFallback, buildGameImageCandidates } from "@/lib/signals/resolve-game-image";
+import { getSignalMetricBarClass } from "@/lib/signals/get-signal-metric-bar-class";
 import type { Jogo, SugestoesAposta } from "@/lib/signals/types";
 
 const barInfo = [
-  ["Distribuição", "dist", "bg-emerald-500"],
-  ["Mínima", "min", "bg-violet-500"],
-  ["Padrão", "pad", "bg-orange-500"],
-  ["Máxima", "max", "bg-red-500"],
+  ["Mínima", "min"],
+  ["Padrão", "pad"],
+  ["Máxima", "max"],
 ] as const;
 
 export function GameCard({ jogo, favorito, onFavorito, calcularSugestoes }: {
@@ -28,9 +28,9 @@ export function GameCard({ jogo, favorito, onFavorito, calcularSugestoes }: {
       <div className="flex flex-1 flex-col p-2.5 sm:p-3">
         <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-white/10 bg-white/5">
           <img src={imageUrl} alt={jogo.nome} data-game-image-candidate-index="0" className="h-full w-full object-cover" onError={(event) => applyGameImageFallback(event.currentTarget, imageCandidates)} />
-          <div className="absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/90 to-transparent px-2 pb-2 pt-7">
-            <span className="text-[9px] font-bold text-white/75 sm:text-[10px]">Distribuição</span>
-            <strong className="text-sm font-black text-emerald-400 sm:text-base">{jogo.dist}%</strong>
+          <div className="absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/90 to-transparent px-2 pb-2 pt-7 [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]">
+            <span className="text-[9px] font-bold text-white/85 sm:text-[10px]">Distribuição</span>
+            <strong className="text-sm font-black text-white sm:text-base">{jogo.dist}%</strong>
           </div>
           <button onClick={() => onFavorito(String(jogo.id))} aria-label={favorito ? "Remover dos favoritos" : "Adicionar aos favoritos"} className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full border border-white/15 bg-black/65 backdrop-blur-sm">
             <Heart size={13} fill={favorito ? "currentColor" : "none"} className={favorito ? "text-red-400" : "text-white"} />
@@ -50,7 +50,7 @@ export function GameCard({ jogo, favorito, onFavorito, calcularSugestoes }: {
           <span className="status-pill"><TrendIcon size={14} />{jogo.tendencia || "Estável"}</span>
         </div>
         <div className="mt-3 space-y-2">
-          {barInfo.map(([label, key, color]) => <div key={key}><div className="mb-1 flex justify-between gap-1 text-[9px] font-bold text-white/70 sm:text-[10px]"><span className="truncate">{label}</span><span>{jogo[key]}%</span></div><div className="h-1.5 overflow-hidden rounded-full bg-white/8"><div className={`h-full rounded-full ${color}`} style={{ width: `${jogo[key]}%` }} /></div></div>)}
+          {barInfo.map(([label, key]) => <div key={key}><div className="mb-1 flex justify-between gap-1 text-[9px] font-bold text-white/70 sm:text-[10px]"><span className="truncate">{label}</span><span>{jogo[key]}%</span></div><div className="h-1.5 overflow-hidden rounded-full bg-white/8"><div className={`h-full rounded-full ${getSignalMetricBarClass(jogo[key])}`} style={{ width: `${jogo[key]}%` }} /></div></div>)}
         </div>
         <div className="mt-3 rounded-xl border border-white/8 bg-black/20 p-2">
           <p className="mb-1.5 truncate text-[8px] font-black uppercase tracking-[.12em] text-[var(--tenant-muted)] sm:text-[9px]">Sugestões de aposta</p>
