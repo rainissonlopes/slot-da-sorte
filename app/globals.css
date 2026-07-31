@@ -5,6 +5,10 @@
   --foreground: #f7faf8;
   --surface: #101512;
   --muted: #9ba8a0;
+  --tenant-action: #00a63e;
+  --tenant-action-hover: #008f35;
+  --tenant-action-active: #007d2e;
+  --tenant-action-text: #ffffff;
   --radius-card: 1.5rem;
   --transition-fast: 180ms ease;
 }
@@ -172,16 +176,48 @@ input {
   justify-content: center;
   gap: 0.5rem;
   border-radius: 0.75rem;
-  background: var(--tenant-primary);
-  color: white;
+  background-color: var(--tenant-action);
+  color: var(--tenant-action-text);
   font-size: 0.875rem;
   font-weight: 800;
-  box-shadow: 0 10px 30px rgb(var(--tenant-primary-rgb, 22 163 74) / 0.2);
+  box-shadow: 0 8px 20px rgb(0 166 62 / 0.14);
 }
 
 .signal-button:hover {
-  filter: brightness(1.1);
+  background-color: var(--tenant-action-hover);
+  color: var(--tenant-action-text);
   transform: translateY(-1px);
+}
+
+.signal-button:active {
+  background-color: var(--tenant-action-active);
+  color: var(--tenant-action-text);
+}
+
+.signal-button:focus-visible,
+.signal-action-icon:focus-visible {
+  outline: 2px solid rgb(0 166 62 / 0.45);
+  outline-offset: 3px;
+}
+
+.signal-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.signal-action-icon {
+  background-color: var(--tenant-action);
+  color: var(--tenant-action-text);
+}
+
+.signal-action-icon:hover {
+  background-color: var(--tenant-action-hover);
+  color: var(--tenant-action-text);
+}
+
+.signal-action-icon:active {
+  background-color: var(--tenant-action-active);
+  color: var(--tenant-action-text);
 }
 
 .section-heading {

@@ -1,5 +1,5 @@
 import { ArrowUpRight, Flame, Heart, Minus, Snowflake, TrendingDown, TrendingUp } from "lucide-react";
-import { applyGameImageFallback, resolveGameImage } from "@/lib/signals/resolve-game-image";
+import { applyGameImageFallback, buildGameImageCandidates } from "@/lib/signals/resolve-game-image";
 import type { Jogo, SugestoesAposta } from "@/lib/signals/types";
 
 const barInfo = [
@@ -15,16 +15,19 @@ export function GameCard({ jogo, favorito, onFavorito, calcularSugestoes }: {
   const sugestoes = calcularSugestoes(jogo.bets);
   const StateIcon = jogo.estado === "Quente" ? Flame : jogo.estado === "Frio" ? Snowflake : Minus;
   const TrendIcon = jogo.tendencia === "Subindo" ? TrendingUp : jogo.tendencia === "Caindo" ? TrendingDown : Minus;
-  const imageUrl = resolveGameImage({
+  const imageCandidates = buildGameImageCandidates({
+    storageImageUrl: jogo.storageImageUrl,
+    storageIconUrl: jogo.storageIconUrl,
     rawImageUrl: jogo.imagemUrl,
     gameId: jogo.id,
     category: jogo.cat,
   });
+  const imageUrl = imageCandidates[0];
   return (
     <article className="signal-card group" data-state={jogo.estado || "Neutro"}>
       <div className="flex flex-1 flex-col p-2.5 sm:p-3">
         <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-white/10 bg-white/5">
-          <img src={imageUrl} alt={jogo.nome} className="h-full w-full object-cover" onError={(event) => applyGameImageFallback(event.currentTarget)} />
+          <img src={imageUrl} alt={jogo.nome} data-game-image-candidate-index="0" className="h-full w-full object-cover" onError={(event) => applyGameImageFallback(event.currentTarget, imageCandidates)} />
           <div className="absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/90 to-transparent px-2 pb-2 pt-7">
             <span className="text-[9px] font-bold text-white/75 sm:text-[10px]">Distribuição</span>
             <strong className="text-sm font-black text-emerald-400 sm:text-base">{jogo.dist}%</strong>
@@ -35,7 +38,7 @@ export function GameCard({ jogo, favorito, onFavorito, calcularSugestoes }: {
         </div>
         <div className="flex min-w-0 items-start gap-2">
           <div className="mt-2.5 grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-lg border border-white/10 bg-white/5 sm:h-10 sm:w-10">
-            <img src={imageUrl} alt={`Miniatura de ${jogo.nome}`} className="h-full w-full object-cover" onError={(event) => applyGameImageFallback(event.currentTarget)} />
+            <img src={imageUrl} alt={`Miniatura de ${jogo.nome}`} data-game-image-candidate-index="0" className="h-full w-full object-cover" onError={(event) => applyGameImageFallback(event.currentTarget, imageCandidates)} />
           </div>
           <div className="mt-2.5 min-w-0 flex-1">
             <h3 className="game-card-title font-black">{jogo.nome}</h3>

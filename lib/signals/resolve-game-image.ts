@@ -1,26 +1,13 @@
 export const GAME_IMAGE_PLACEHOLDER = "/placeholder-game.webp";
 
-type ResolveGameImageInput = {
+export type ResolveGameImageInput = {
+  storageImageUrl?: string | null;
+  storageIconUrl?: string | null;
   rawImageUrl?: string | null;
+  legacyImageUrl?: string | null;
   gameId: string | number;
   category?: string | null;
 };
-
-const CATEGORY_PATHS: Record<string, string> = {
-  PG: "games-pg",
-  "PG GAMES": "games-pg",
-  "PG SOFT": "games-pg",
-  PP: "games-pp",
-  "PP GAMES": "games-pp",
-  PRAGMATIC: "games-pp",
-  WG: "games-wg",
-  "WG GAMES": "games-wg",
-  TADA: "games-tada",
-};
-
-function normalizeCategory(category?: string | null) {
-  return category?.trim().replace(/\s+/g, " ").toUpperCase() || "";
-}
 
 function isValidAbsoluteUrl(value: string) {
   try {
@@ -31,26 +18,53 @@ function isValidAbsoluteUrl(value: string) {
   }
 }
 
-export function resolveGameImage({ rawImageUrl, gameId, category }: ResolveGameImageInput): string {
-  const rawValue = rawImageUrl?.trim() || "";
-
-  if (isValidAbsoluteUrl(rawValue)) return rawValue;
-  if (rawValue.startsWith("/")) return rawValue;
-
-  const imageId = /^\d+$/.test(rawValue) ? rawValue : String(gameId).trim();
-  if (!/^\d+$/.test(imageId) || (rawValue && !/^\d+$/.test(rawValue))) {
-    return GAME_IMAGE_PLACEHOLDER;
+function isGameStorageUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:"
+      && url.hostname.endsWith(".supabase.co")
+      && url.pathname.includes("/storage/v1/object/public/games/");
+  } catch {
+    return false;
   }
-
-  const categoryPath = CATEGORY_PATHS[normalizeCategory(category)];
-  if (!categoryPath) return GAME_IMAGE_PLACEHOLDER;
-
-  return `https://reidoslotsinais.org/image/${categoryPath}/${imageId}.webp`;
 }
 
-export function applyGameImageFallback(image: HTMLImageElement) {
-  if (image.dataset.gameImageFallback === "true") return;
+function isSafeImageSource(value: string) {
+  if (!value || value === GAME_IMAGE_PLACEHOLDER || /^\/?\d+$/.test(value)) return false;
+  return isValidAbsoluteUrl(value) || value.startsWith("/");
+}
 
-  image.dataset.gameImageFallback = "true";
-  image.src = GAME_IMAGE_PLACEHOLDER;
+export function buildGameImageCandidates({
+  storageImageUrl,
+  storageIconUrl,
+  rawImageUrl,
+  legacyImageUrl,
+}: ResolveGameImageInput): string[] {
+  const cover = storageImageUrl?.trim() || "";
+  const icon = storageIconUrl?.trim() || "";
+  const raw = rawImageUrl?.trim() || "";
+  const legacy = legacyImageUrl?.trim() || "";
+  return [...new Set([
+    isGameStorageUrl(cover) ? cover : "",
+    isGameStorageUrl(icon) ? icon : "",
+    isSafeImageSource(raw) ? raw : "",
+    isSafeImageSource(legacy) ? legacy : "",
+    GAME_IMAGE_PLACEHOLDER,
+  ].filter(Boolean))];
+}
+
+export function resolveGameImage(input: ResolveGameImageInput): string {
+  return buildGameImageCandidates(input)[0] ?? GAME_IMAGE_PLACEHOLDER;
+}
+
+export function applyGameImageFallback(image: HTMLImageElement, candidates: string[] = [GAME_IMAGE_PLACEHOLDER]) {
+  const currentIndex = Number.parseInt(image.dataset.gameImageCandidateIndex || "0", 10);
+  const safeIndex = Number.isFinite(currentIndex) && currentIndex >= 0 ? currentIndex : 0;
+  const nextIndex = safeIndex + 1;
+  if (nextIndex >= candidates.length) {
+    image.dataset.gameImageFallbackComplete = "true";
+    return;
+  }
+  image.dataset.gameImageCandidateIndex = String(nextIndex);
+  image.src = candidates[nextIndex];
 }

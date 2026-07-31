@@ -1,0 +1,11 @@
+{
+  "source": "rei-dos-slots",
+  "acceptedAt": "2026-07-30T00:00:00.000Z",
+  "total": 304,
+  "providers": {
+    "pg": 168,
+    "pp": 49,
+    "tada": 61,
+    "wg": 26
+  }
+}

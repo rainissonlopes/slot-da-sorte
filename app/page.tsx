@@ -13,11 +13,19 @@ import { SiteFooter } from "@/components/signals/SiteFooter";
 import { SiteHeader } from "@/components/signals/SiteHeader";
 import { TrendingGames } from "@/components/signals/TrendingGames";
 import { WhatsAppBanner } from "@/components/signals/WhatsAppBanner";
+import {
+  getCatalogBatchSize,
+  getNextCatalogLimit,
+  getVisibleCatalogCount,
+  getVisibleCatalogItems,
+  MOBILE_CATALOG_BATCH,
+} from "@/lib/signals/catalog-pagination";
 import { supabase } from "@/lib/supabase";
 import type {
   Aparencia,
   ConfigSite,
   EstadoJogo,
+  GameMediaRow,
   Jogo,
   Plataforma,
   SinalRow,
@@ -180,6 +188,20 @@ function normalizeExternalLink(value?: string) {
   return phone.length >= 10 ? `https://wa.me/${phone}` : undefined;
 }
 
+function normalizeGameName(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().replace(/\s+/g, " ");
+}
+
+function normalizeGameProvider(value: string) {
+  const normalized = value.trim().toUpperCase();
+  if (normalized === "PG") return "pg";
+  if (normalized === "PP") return "pp";
+  if (normalized === "TADA") return "tada";
+  if (normalized === "WG") return "wg";
+  return normalized.toLowerCase();
+}
+
 export default function Home() {
   const [mostrarPopup, setMostrarPopup] = useState(false);
   const [favoritos, setFavoritos] = useState<string[]>(() => {
@@ -203,8 +225,24 @@ export default function Home() {
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState("");
   const [proximaAtualizacao, setProximaAtualizacao] = useState(CICLO_SEGUNDOS);
   const [jogos, setJogos] = useState<Jogo[]>([]);
+  const [catalogBatchSize, setCatalogBatchSize] = useState(MOBILE_CATALOG_BATCH);
+  const [visibleCatalogLimit, setVisibleCatalogLimit] = useState(MOBILE_CATALOG_BATCH);
   const carregadoRef = useRef(false);
+  const catalogBatchRef = useRef(MOBILE_CATALOG_BATCH);
   const categorias = ["Todos", "PG Games", "PP Games", "WG Games", "Favoritos"];
+
+  useEffect(() => {
+    const updateCatalogBatch = () => {
+      const nextBatch = getCatalogBatchSize(window.innerWidth);
+      if (catalogBatchRef.current === nextBatch) return;
+      catalogBatchRef.current = nextBatch;
+      setCatalogBatchSize(nextBatch);
+      setVisibleCatalogLimit(nextBatch);
+    };
+    updateCatalogBatch();
+    window.addEventListener("resize", updateCatalogBatch);
+    return () => window.removeEventListener("resize", updateCatalogBatch);
+  }, []);
 
   useEffect(() => {
     async function carregarConfig() {
@@ -309,15 +347,36 @@ export default function Home() {
         }
       }
 
-      const { data: sinaisData, error: sinaisError } = await supabase
-        .from("sinais")
-        .select("*")
-        .abortSignal(controller.signal)
-        .returns<SinalRow[]>();
+      const [
+        { data: sinaisData, error: sinaisError },
+        { data: gameMediaData, error: gameMediaError },
+      ] = await Promise.all([
+        supabase
+          .from("sinais")
+          .select("*")
+          .abortSignal(controller.signal)
+          .returns<SinalRow[]>(),
+        supabase
+          .from("games")
+          .select("provider_normalized,name_normalized,storage_image_url,storage_icon_url")
+          .eq("source", "rei-dos-slots")
+          .abortSignal(controller.signal)
+          .returns<GameMediaRow[]>(),
+      ]);
       if (sinaisError) {
         console.error("[Sinais] erro da consulta:", sinaisError.message);
         throw sinaisError;
       }
+      if (gameMediaError) console.warn("[Games] catálogo normalizado indisponível; usando compatibilidade legada:", gameMediaError.message);
+      const mediaByIdentity = new Map(
+        (gameMediaData || []).map((game) => [
+          `${game.provider_normalized}:${game.name_normalized}`,
+          {
+            cover: game.storage_image_url || undefined,
+            icon: game.storage_icon_url || undefined,
+          },
+        ]),
+      );
       const currentTimestamp = cacheValido ? cacheTimestamp : Date.now();
 
       const jogosFormatados: Jogo[] = (sinaisData || [])
@@ -326,6 +385,7 @@ export default function Home() {
             ? cacheJogos.find((game) => String(game.id) === String(sinal.id))
             : null;
           const plataforma = plataformas.length ? plataformas[index % plataformas.length] : undefined;
+          const media = mediaByIdentity.get(`${normalizeGameProvider(sinal.categoria_jogo)}:${normalizeGameName(sinal.nome_jogo)}`);
           let baseGame: Jogo = {
             id: sinal.id,
             nome: sinal.nome_jogo,
@@ -339,6 +399,8 @@ export default function Home() {
             plataforma,
             bets: sinal.bets || [],
             imagemUrl: sinal.imagem_url,
+            storageImageUrl: media?.cover,
+            storageIconUrl: media?.icon,
           };
 
           if (cachedGame) {
@@ -361,8 +423,7 @@ export default function Home() {
           const hashA = hashString(a.id.toString() + currentTimestamp.toString());
           const hashB = hashString(b.id.toString() + currentTimestamp.toString());
           return hashA - hashB;
-        })
-        .slice(0, 250);
+        });
 
       const parsedCache = dadosSalvos
         ? (JSON.parse(dadosSalvos) as { ultimaAtualizacao?: string })
@@ -421,6 +482,23 @@ export default function Home() {
       return bateBusca && bateCategoria;
     });
   }, [busca, categoriaAtiva, jogos, favoritos]);
+
+  const jogosVisiveis = useMemo(
+    () => getVisibleCatalogItems(filtrados, visibleCatalogLimit),
+    [filtrados, visibleCatalogLimit],
+  );
+  const visibleCatalogCount = getVisibleCatalogCount(visibleCatalogLimit, filtrados.length);
+  const hasMoreCatalogGames = visibleCatalogCount < filtrados.length;
+
+  const handleBusca = useCallback((value: string) => {
+    setBusca(value);
+    setVisibleCatalogLimit(catalogBatchSize);
+  }, [catalogBatchSize]);
+
+  const handleCategoria = useCallback((value: string) => {
+    setCategoriaAtiva(value);
+    setVisibleCatalogLimit(catalogBatchSize);
+  }, [catalogBatchSize]);
 
   const jogosEmAlta = useMemo(() => {
     const prioridadeEstado: Record<EstadoJogo, number> = { Quente: 4, Aquecendo: 3, Neutro: 2, Frio: 1 };
@@ -487,7 +565,7 @@ export default function Home() {
         />
         <RecommendedPlatforms plataformas={plataformas} />
         <div id="jogos-em-alta"><TrendingGames jogos={jogosEmAlta} /></div>
-        <GameFilters busca={busca} onBusca={setBusca} categorias={categorias} categoriaAtiva={categoriaAtiva} onCategoria={setCategoriaAtiva} />
+        <GameFilters busca={busca} onBusca={handleBusca} categorias={categorias} categoriaAtiva={categoriaAtiva} onCategoria={handleCategoria} />
         <section id="todos-os-jogos" aria-label="Todos os jogos">
           <SectionHeading
             icon={<LayoutGrid aria-hidden="true" />}
@@ -495,7 +573,26 @@ export default function Home() {
             title="Todos os jogos"
             description={`Atualizado às ${ultimaAtualizacao} · próximo ciclo em ${proximaAtualizacao}s`}
           />
-          <GamesGrid jogos={filtrados} favoritos={favoritos} onFavorito={toggleFavorito} calcularSugestoes={calcularSugestoes} emptyText={jogos.length === 0 ? "Carregamento concluído, mas nenhum jogo está disponível no momento." : "Nenhum jogo corresponde à busca ou ao filtro selecionado."} />
+          <GamesGrid jogos={jogosVisiveis} favoritos={favoritos} onFavorito={toggleFavorito} calcularSugestoes={calcularSugestoes} emptyText={jogos.length === 0 ? "Carregamento concluído, mas nenhum jogo está disponível no momento." : "Nenhum jogo corresponde à busca ou ao filtro selecionado."} />
+          {filtrados.length > 0 && (
+            <div className="mt-7 flex flex-col items-center gap-3" aria-live="polite">
+              <p className="text-xs font-semibold text-[var(--tenant-muted)]">
+                Exibindo {visibleCatalogCount} de {filtrados.length} jogos
+              </p>
+              {hasMoreCatalogGames ? (
+                <button
+                  type="button"
+                  aria-label={`Carregar mais ${Math.min(catalogBatchSize, filtrados.length - visibleCatalogCount)} jogos`}
+                  onClick={() => setVisibleCatalogLimit((current) => getNextCatalogLimit(current, catalogBatchSize, filtrados.length))}
+                  className="signal-button w-full max-w-xs px-6 py-3 sm:w-auto sm:min-w-56"
+                >
+                  Carregar mais jogos
+                </button>
+              ) : (
+                <p className="text-xs font-semibold text-white/55">Todos os jogos foram exibidos</p>
+              )}
+            </div>
+          )}
         </section>
         <WhatsAppBanner whatsapp={configSite?.whatsapp} />
       </div>
@@ -511,7 +608,7 @@ export default function Home() {
             <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm"><input type="checkbox" onChange={(event) => event.target.checked ? localStorage.setItem("popup-plataforma", "true") : localStorage.removeItem("popup-plataforma")} /> Não mostrar novamente</label>
             <div className="mt-3 flex gap-2">
               <a href={configSite?.popup_link || "#"} target="_blank" rel="noopener noreferrer" className="signal-button flex-1 py-3">{aparencia?.texto_cta || "Acessar plataforma"}</a>
-              {configSite?.whatsapp && <a href={configSite.whatsapp} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="grid h-12 w-12 place-items-center rounded-xl bg-emerald-500 text-white"><FaWhatsapp size={20} /></a>}
+              {configSite?.whatsapp && <a href={configSite.whatsapp} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="signal-action-icon grid h-12 w-12 place-items-center rounded-xl"><FaWhatsapp size={20} /></a>}
             </div>
           </div>
         </motion.div>

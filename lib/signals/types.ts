@@ -14,6 +14,8 @@ export type Jogo = {
   link: string;
   bets: string[];
   imagemUrl?: string;
+  storageImageUrl?: string;
+  storageIconUrl?: string;
   estado?: EstadoJogo;
   tendencia?: TendenciaJogo;
   volatilidade?: number;
@@ -57,6 +59,13 @@ export type SinalRow = {
   cor_background?: string;
   bets?: string[];
   imagem_url?: string;
+};
+
+export type GameMediaRow = {
+  provider_normalized: string;
+  name_normalized: string;
+  storage_image_url?: string | null;
+  storage_icon_url?: string | null;
 };
 
 export type SugestoesAposta = {

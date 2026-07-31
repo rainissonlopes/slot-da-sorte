@@ -6,7 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "sync:games:preview": "node scripts/sync-games/index.mjs preview",
+    "sync:games:apply": "node scripts/sync-games/index.mjs apply",
+    "sync:games:verify": "node scripts/sync-games/index.mjs verify",
+    "sync:games:audit-images": "node scripts/sync-games/audit-missing-images.mjs",
+    "test:sync-games": "node --test --test-isolation=none scripts/sync-games/tests/*.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.1",
