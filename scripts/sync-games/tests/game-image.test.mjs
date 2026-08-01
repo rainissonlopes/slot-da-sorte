@@ -24,13 +24,12 @@ test("usa ícone quando a capa não está disponível", () => {
   assert.equal(resolveGameImage({ storageIconUrl: icon, rawImageUrl: "1", gameId: 1 }), icon);
 });
 
-test("fallback avança uma vez por candidato e não entra em loop", () => {
+test("fallback troca diretamente para o placeholder uma única vez", () => {
   const image = { dataset: { gameImageCandidateIndex: "0" }, src: cover };
   const candidates = [cover, icon, GAME_IMAGE_PLACEHOLDER];
   applyGameImageFallback(image, candidates);
-  assert.equal(image.src, icon);
-  applyGameImageFallback(image, candidates);
   assert.equal(image.src, GAME_IMAGE_PLACEHOLDER);
+  assert.equal(image.dataset.gameImageFallbackComplete, "true");
   applyGameImageFallback(image, candidates);
   assert.equal(image.src, GAME_IMAGE_PLACEHOLDER);
   assert.equal(image.dataset.gameImageFallbackComplete, "true");

@@ -24,8 +24,11 @@ export function extensionForContentType(contentType) {
   return extension;
 }
 
-export async function downloadRemoteImage(url) {
-  const { response, finalUrl, redirects } = await fetchWithPolicy(url, { timeoutMs: 20_000 });
+export async function downloadRemoteImage(url, options = {}) {
+  const { response, finalUrl, redirects } = await fetchWithPolicy(url, {
+    timeoutMs: 20_000,
+    allowlist: options.allowlist,
+  });
   if (response.status !== 200) throw new Error(`HTTP ${response.status}`);
   const declared = (response.headers.get("content-type") ?? "").split(";")[0].toLowerCase();
   if (!declared.startsWith("image/")) throw new Error(`Content-Type não é imagem: ${declared || "ausente"}`);

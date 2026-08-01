@@ -13,6 +13,7 @@
 # testing
 /coverage
 /.tmp/
+/scripts/sync-games/manual-image-mappings.local.json
 
 # next.js
 /.next/

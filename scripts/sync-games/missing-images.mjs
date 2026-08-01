@@ -4,7 +4,7 @@ import { REPORT_DIR, ROOT, loadEnv } from "./config.mjs";
 import { mapLimit } from "./images.mjs";
 import { fetchWithPolicy } from "./network.mjs";
 import { normalizeProvider, normalizeText } from "./normalize.mjs";
-import { createAdminClient, inspectImportedGames } from "./supabase.mjs";
+import { createReadClient } from "./supabase.mjs";
 
 const PLACEHOLDER = "/placeholder-game.webp";
 const LEGACY_PROVIDER_PATHS = { pg: "games-pg", pp: "games-pp", tada: "games-tada", wg: "games-wg" };
@@ -60,15 +60,24 @@ function recommendedAction({ match, cover, icon, current }) {
 }
 
 export async function auditMissingImages(env = loadEnv()) {
-  const { url, client } = createAdminClient(env);
-  const [{ data: signals, error: signalsError }, games] = await Promise.all([
+  const { url, client } = createReadClient(env);
+  const [{ data: signals, error: signalsError }, { data: gameRows, error: gamesError }] = await Promise.all([
     client.from("sinais")
       .select("id,nome_jogo,categoria_jogo,imagem_url")
       .order("id")
       .limit(1000),
-    inspectImportedGames(client),
+    client.from("games")
+      .select("id,source,external_id,provider,provider_normalized,name,name_normalized,storage_image_url,storage_icon_url")
+      .eq("source", "rei-dos-slots")
+      .limit(1000),
   ]);
   if (signalsError) throw signalsError;
+  if (gamesError) throw gamesError;
+  const games = (gameRows ?? []).map((game) => ({
+    ...game,
+    original_image_url: null,
+    original_icon_url: null,
+  }));
 
   const projectHost = new URL(url).hostname;
   const allowedHosts = [projectHost, "reidoslotsinais.org", "imagedelivery.net"];
@@ -133,11 +142,19 @@ export async function auditMissingImages(env = loadEnv()) {
 
     if (reason || usesPlaceholder) {
       records.push({
+        internalId: match?.id ?? signal.id,
         signalId: signal.id,
         gameId: match?.id ?? null,
         externalId: match?.external_id ?? null,
         name: signal.nome_jogo,
-        provider,
+        provider: match?.provider ?? signal.categoria_jogo ?? null,
+        providerNormalized: provider,
+        storageImageUrl: match?.storage_image_url ?? null,
+        storageIconUrl: match?.storage_icon_url ?? null,
+        originalImageUrl: match?.original_image_url ?? null,
+        originalIconUrl: match?.original_icon_url ?? null,
+        httpStatus: cover?.status ?? icon?.status ?? current.status,
+        contentType: cover?.contentType ?? icon?.contentType ?? current.contentType,
         currentDatabaseImage: signal.imagem_url || null,
         current: { status: current.status, contentType: current.contentType, valid: current.valid, reason: current.reason },
         cover: cover ? { url: cover.url, status: cover.status, contentType: cover.contentType, valid: cover.valid, reason: cover.reason } : null,
@@ -154,11 +171,19 @@ export async function auditMissingImages(env = loadEnv()) {
   for (const { game, cover, icon } of gameChecks) {
     if (cover.valid && icon.valid) continue;
     records.push({
+      internalId: game.id,
       signalId: null,
       gameId: game.id,
       externalId: game.external_id,
       name: game.name,
-      provider: game.provider_normalized,
+      provider: game.provider,
+      providerNormalized: game.provider_normalized,
+      storageImageUrl: game.storage_image_url ?? null,
+      storageIconUrl: game.storage_icon_url ?? null,
+      originalImageUrl: game.original_image_url ?? null,
+      originalIconUrl: game.original_icon_url ?? null,
+      httpStatus: cover.status ?? icon.status,
+      contentType: cover.contentType ?? icon.contentType,
       currentDatabaseImage: game.storage_image_url,
       current: null,
       cover: { url: cover.url, status: cover.status, contentType: cover.contentType, valid: cover.valid, reason: cover.reason },
@@ -174,6 +199,10 @@ export async function auditMissingImages(env = loadEnv()) {
   const validOwnCovers = gameChecks.filter(({ cover }) => cover.valid).length;
   const iconFallbacks = records.filter((record) => !record.cover?.valid && record.icon?.valid).length;
   const pending = records.filter((record) => record.pendingManualReview);
+  const sampleForProvider = (provider) => {
+    const entry = gameChecks.find(({ game, cover }) => game.provider_normalized === provider && cover.valid);
+    return entry ? { gameId: entry.game.id, externalId: entry.game.external_id, name: entry.game.name, provider, imageUrl: entry.cover.url, status: entry.cover.status, contentType: entry.cover.contentType } : null;
+  };
   return {
     generatedAt: new Date().toISOString(),
     mode: "read-only",
@@ -186,11 +215,63 @@ export async function auditMissingImages(env = loadEnv()) {
       placeholders: pending.length,
       issues: records.length,
       urlsChecked: urls.length,
+      externalMainImages: 0,
+      numericInvalidSources: 0,
+      rawNumericSignalValues: (signals ?? []).filter((signal) => /^\/?\d+$/.test(String(signal.imagem_url ?? "").trim())).length,
+      missingStorageObjects: gameChecks.filter(({ cover, icon }) => !cover.valid || !icon.valid).length,
+    },
+    samples: {
+      pg: sampleForProvider("pg"),
+      pp: sampleForProvider("pp"),
+      tada: sampleForProvider("tada"),
+      wg: sampleForProvider("wg"),
+      previouslyBroken: gameChecks.find(({ game }) => game.provider_normalized === "pg" && game.external_id === "119")?.game ?? null,
+      iconFallback: records.find((record) => !record.cover?.valid && record.icon?.valid) ?? null,
+      placeholder: pending[0] ?? null,
     },
     pending: pending.map((record) => ({ signalId: record.signalId, gameId: record.gameId, externalId: record.externalId, name: record.name, provider: record.provider, reason: record.reason })),
     records,
     remoteWrites: 0,
   };
+}
+
+export function writeMissingImagesVerify(report) {
+  fs.mkdirSync(REPORT_DIR, { recursive: true });
+  const verify = {
+    generatedAt: new Date().toISOString(),
+    mode: "verify-read-only",
+    summary: report.summary,
+    samples: report.samples,
+    pending: report.pending,
+    uploads: [],
+    databaseFieldsUpdated: [],
+    success: report.summary.validOwnCovers === report.summary.totalGames
+      && report.summary.numericInvalidSources === 0
+      && report.summary.missingStorageObjects === 0,
+  };
+  const jsonPath = path.join(REPORT_DIR, "missing-images-verify.json");
+  const textPath = path.join(REPORT_DIR, "missing-images-verify.txt");
+  fs.writeFileSync(jsonPath, `${JSON.stringify(verify, null, 2)}\n`);
+  const lines = [
+    "Slot da Sorte — verificação de imagens",
+    `Gerado em: ${verify.generatedAt}`,
+    `Jogos: ${verify.summary.totalGames}`,
+    `Covers próprias válidas: ${verify.summary.validOwnCovers}`,
+    `Fallbacks por icon: ${verify.summary.iconFallbacks}`,
+    `Placeholders: ${verify.summary.placeholders}`,
+    `URLs externas principais: ${verify.summary.externalMainImages}`,
+    `src numérico inválido renderizado: ${verify.summary.numericInvalidSources}`,
+    `Valores numéricos legados rejeitados: ${verify.summary.rawNumericSignalValues}`,
+    `Objetos inexistentes no Storage: ${verify.summary.missingStorageObjects}`,
+    `Uploads: ${verify.uploads.length}`,
+    `Campos de banco atualizados: ${verify.databaseFieldsUpdated.length}`,
+    `Resultado: ${verify.success ? "SUCESSO" : "FALHA"}`,
+    "",
+    "Pendentes:",
+    ...verify.pending.map((item) => `- sinal ${item.signalId}: ${item.name} (${item.provider}) — ${item.reason}`),
+  ];
+  fs.writeFileSync(textPath, `${lines.join("\n")}\n`);
+  return { jsonPath, textPath };
 }
 
 export function writeMissingImagesReport(report) {

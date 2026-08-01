@@ -58,13 +58,8 @@ export function resolveGameImage(input: ResolveGameImageInput): string {
 }
 
 export function applyGameImageFallback(image: HTMLImageElement, candidates: string[] = [GAME_IMAGE_PLACEHOLDER]) {
-  const currentIndex = Number.parseInt(image.dataset.gameImageCandidateIndex || "0", 10);
-  const safeIndex = Number.isFinite(currentIndex) && currentIndex >= 0 ? currentIndex : 0;
-  const nextIndex = safeIndex + 1;
-  if (nextIndex >= candidates.length) {
-    image.dataset.gameImageFallbackComplete = "true";
-    return;
-  }
-  image.dataset.gameImageCandidateIndex = String(nextIndex);
-  image.src = candidates[nextIndex];
+  if (image.dataset.gameImageFallbackComplete === "true") return;
+  image.dataset.gameImageFallbackComplete = "true";
+  image.dataset.gameImageCandidateIndex = String(Math.max(0, candidates.indexOf(GAME_IMAGE_PLACEHOLDER)));
+  if (image.src !== GAME_IMAGE_PLACEHOLDER) image.src = GAME_IMAGE_PLACEHOLDER;
 }

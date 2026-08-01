@@ -11,6 +11,9 @@
     "sync:games:apply": "node scripts/sync-games/index.mjs apply",
     "sync:games:verify": "node scripts/sync-games/index.mjs verify",
     "sync:games:audit-images": "node scripts/sync-games/audit-missing-images.mjs",
+    "sync:games:review-manual-images": "node scripts/sync-games/manual-image-review.mjs",
+    "sync:games:apply-manual-mappings": "node scripts/sync-games/manual-image-mappings.mjs",
+    "sync:games:import-exact-images": "node scripts/sync-games/import-exact-public-images.mjs",
     "test:sync-games": "node --test --test-isolation=none scripts/sync-games/tests/*.test.mjs"
   },
   "dependencies": {

@@ -1,0 +1,23 @@
+[
+  { "signal_id": 8, "signal_name": "Muay Thai", "game_id": null, "external_id": null, "provider_normalized": null, "status": "pending", "notes": "" },
+  { "signal_id": 16, "signal_name": "Rave Party Fever", "game_id": null, "external_id": null, "provider_normalized": null, "status": "pending", "notes": "" },
+  { "signal_id": 18, "signal_name": "Fruity Candy", "game_id": null, "external_id": null, "provider_normalized": null, "status": "pending", "notes": "" },
+  { "signal_id": 21, "signal_name": "Roost Rumble", "game_id": null, "external_id": null, "provider_normalized": null, "status": "pending", "notes": "" },
+  { "signal_id": 56, "signal_name": "The Great Icescape", "game_id": null, "external_id": null, "provider_normalized": null, "status": "pending", "notes": "" },
+  { "signal_id": 59, "signal_name": "Secrets of Cleopatra", "game_id": null, "external_id": null, "provider_normalized": null, "status": "pending", "notes": "" },
+  { "signal_id": 61, "signal_name": "Medusa", "game_id": null, "external_id": null, "provider_normalized": null, "status": "pending", "notes": "" },
+  { "signal_id": 85, "signal_name": "Symbols of Egypt", "game_id": null, "external_id": null, "provider_normalized": null, "status": "pending", "notes": "" },
+  { "signal_id": 86, "signal_name": "Egypt's Book of Mystery", "game_id": null, "external_id": null, "provider_normalized": null, "status": "pending", "notes": "" },
+  { "signal_id": 95, "signal_name": "Thai River Wonders", "game_id": null, "external_id": null, "provider_normalized": null, "status": "pending", "notes": "" },
+  { "signal_id": 111, "signal_name": "Hip Hop Panda", "game_id": null, "external_id": null, "provider_normalized": null, "status": "pending", "notes": "" },
+  { "signal_id": 116, "signal_name": "Destiny of Sun & Moon", "game_id": null, "external_id": null, "provider_normalized": null, "status": "pending", "notes": "" },
+  { "signal_id": 119, "signal_name": "Medusa 2", "game_id": null, "external_id": null, "provider_normalized": null, "status": "pending", "notes": "" },
+  { "signal_id": 127, "signal_name": "Ninja vs Samurai", "game_id": null, "external_id": null, "provider_normalized": null, "status": "pending", "notes": "" },
+  { "signal_id": 147, "signal_name": "Genies 3 Wishes", "game_id": null, "external_id": null, "provider_normalized": null, "status": "pending", "notes": "" },
+  { "signal_id": 162, "signal_name": "Super Market", "game_id": null, "external_id": null, "provider_normalized": null, "status": "pending", "notes": "" },
+  { "signal_id": 165, "signal_name": "Sugar Hush", "game_id": null, "external_id": null, "provider_normalized": null, "status": "pending", "notes": "" },
+  { "signal_id": 168, "signal_name": "Dragon Tiger", "game_id": null, "external_id": null, "provider_normalized": null, "status": "pending", "notes": "" },
+  { "signal_id": 170, "signal_name": "Win Win Fish Prawn Crab", "game_id": null, "external_id": null, "provider_normalized": null, "status": "pending", "notes": "" },
+  { "signal_id": 212, "signal_name": "Captain's Bounty", "game_id": null, "external_id": null, "provider_normalized": null, "status": "pending", "notes": "" },
+  { "signal_id": 220, "signal_name": "Lucky Clover Lady", "game_id": null, "external_id": null, "provider_normalized": null, "status": "pending", "notes": "" }
+]

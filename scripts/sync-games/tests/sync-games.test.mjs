@@ -7,6 +7,7 @@ import { catalogFingerprint, normalizeGame, normalizeImageUrl, normalizeProvider
 import { matchExistingGames, preserveManualFields } from "../plan.mjs";
 import { decodeFlightPayloads, extractActionResult, extractInitialPage } from "../source.mjs";
 import { collectAllPages, findDuplicates } from "../validate.mjs";
+import { suggestCandidates } from "../manual-image-review.mjs";
 
 test("normaliza providers conhecidos", () => {
   assert.equal(normalizeProvider("PG SOFT"), "pg");
@@ -89,4 +90,18 @@ test("hash/fingerprint é estável e assinatura real rejeita HTML", () => {
 
 test("testes unitários não dependem de rede", async () => {
   assert.equal(typeof auditImages, "function");
+});
+
+test("revisão manual sugere alias sem associar automaticamente", () => {
+  const candidates = suggestCandidates(
+    { nome_jogo: "Symbols of Egypt", categoria_jogo: "PG", imagem_url: "104" },
+    [
+      { id: 1, source: "rei-dos-slots", external_id: "118", provider_normalized: "pg", name: "Symbolz Of Egypt", name_normalized: "symbolz of egypt", storage_image_url: "https://project.supabase.co/storage/v1/object/public/games/pg/118/cover.jpg", storage_icon_url: null },
+      { id: 2, source: "rei-dos-slots", external_id: "104", provider_normalized: "pg", name: "Galactic Gems", name_normalized: "galactic gems", storage_image_url: "https://project.supabase.co/storage/v1/object/public/games/pg/104/cover.jpg", storage_icon_url: null }
+    ],
+  );
+  assert.equal(candidates[0].name, "Symbolz Of Egypt");
+  assert.equal(candidates[0].confidence, "alta");
+  assert.equal(candidates.some((candidate) => candidate.externalId === "104"), true);
+  assert.equal("selected" in candidates[0], false);
 });
