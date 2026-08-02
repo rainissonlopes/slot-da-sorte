@@ -375,7 +375,7 @@ export default function Home() {
           .returns<SinalRow[]>(),
         supabase
           .from("games")
-          .select("id,external_id,name,provider_normalized,name_normalized,storage_image_url,storage_icon_url")
+          .select("*")
           .eq("source", "rei-dos-slots")
           .abortSignal(controller.signal)
           .returns<GameMediaRow[]>(),
@@ -391,6 +391,7 @@ export default function Home() {
           {
             cover: game.storage_image_url || undefined,
             icon: game.storage_icon_url || undefined,
+            themeColor: game.theme_color || undefined,
           },
         ]),
       );
@@ -400,6 +401,7 @@ export default function Home() {
           {
             cover: game.storage_image_url || undefined,
             icon: game.storage_icon_url || undefined,
+            themeColor: game.theme_color || undefined,
           },
         ]),
       );
@@ -422,13 +424,14 @@ export default function Home() {
             min: 0,
             pad: 0,
             max: 0,
-            cor: sinal.cor_background || "#1c1c1e",
+            cor: sinal.cor_background,
             link: plataforma?.link || "#",
             plataforma,
             bets: sinal.bets || [],
             imagemUrl: sinal.imagem_url,
             storageImageUrl: media?.cover,
             storageIconUrl: media?.icon,
+            themeColor: media?.themeColor,
             destaque: sinal.destaque === true,
           };
 
@@ -614,7 +617,7 @@ export default function Home() {
   return (
     <main className="signals-page min-h-screen overflow-x-hidden" style={tenantStyles}>
       <div className="fixed-bg" />
-      <SiteHeader aparencia={aparencia} whatsapp={whatsappLink} buttonText={siteConfig.headerButtonText} active={siteConfig.headerActive} />
+      <SiteHeader aparencia={aparencia} whatsapp={whatsappLink} buttonText={siteConfig.headerButtonText} active={siteConfig.headerActive} socialItems={siteConfig.socialNav} />
       <div className="space-y-14 py-6 sm:space-y-20 sm:py-10">
         {siteSections.map((section) => section.id === "footer"
           ? <div key={section.id}>{renderSiteSection(section.id)}</div>

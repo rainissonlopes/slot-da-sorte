@@ -10,7 +10,7 @@ export type Jogo = {
   min: number;
   pad: number;
   max: number;
-  cor: string;
+  cor?: string;
   link: string;
   bets: string[];
   imagemUrl?: string;
@@ -20,6 +20,7 @@ export type Jogo = {
   tendencia?: TendenciaJogo;
   volatilidade?: number;
   destaque?: boolean;
+  themeColor?: string;
   plataforma?: Plataforma;
 };
 
@@ -76,6 +77,18 @@ export type GameMediaRow = {
   name_normalized: string;
   storage_image_url?: string | null;
   storage_icon_url?: string | null;
+  theme_color?: string | null;
+};
+
+export type SocialNavId = "home" | "instagram" | "telegram" | "tiktok" | "whatsapp_vip";
+
+export type SocialNavItemConfig = {
+  id: SocialNavId;
+  label: string;
+  url: string;
+  enabled: boolean;
+  order: number;
+  highlighted: boolean;
 };
 
 export type SiteSectionId = "banner" | "plataformas" | "distribuicoes" | "busca" | "catalogo" | "cta_whatsapp" | "footer";

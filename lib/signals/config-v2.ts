@@ -1,5 +1,8 @@
 import { normalizeSiteSections } from "@/lib/signals/site-sections";
-import type { Aparencia, ConfigSite, SiteSectionConfig } from "@/lib/signals/types";
+import { mergeSocialNav, resolveSocialNav } from "@/lib/signals/social-nav";
+import type { Aparencia, ConfigSite, SiteSectionConfig, SocialNavItemConfig } from "@/lib/signals/types";
+
+export { resolveSocialNav } from "@/lib/signals/social-nav";
 
 export type JsonObject = Record<string, unknown>;
 
@@ -96,6 +99,7 @@ export function resolveSiteV2(config: ConfigSite | null | undefined) {
     ctaButtonText: stringValue(cta.button_text, DEFAULT_CTA_BUTTON_TEXT),
     ctaActive: booleanValue(cta.active, true),
     sections: normalizeSiteSections(raw.sections),
+    socialNav: resolveSocialNav(config),
   };
 }
 
@@ -135,6 +139,7 @@ export function mergeSiteV2(
     ctaButtonText: string;
     ctaActive: boolean;
     sections: SiteSectionConfig[];
+    socialNav: SocialNavItemConfig[];
   },
 ) {
   const raw = asJsonObject(current);
@@ -158,5 +163,6 @@ export function mergeSiteV2(
       active: values.ctaActive,
     },
     sections: mergeSections(raw.sections, values.sections),
+    social_nav: mergeSocialNav(raw.social_nav, values.socialNav),
   };
 }

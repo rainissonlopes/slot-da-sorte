@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Flame } from "lucide-react";
 import { useRef } from "react";
 import { SectionHeading } from "@/components/signals/SectionHeading";
 import { applyGameImageFallback, buildGameImageCandidates } from "@/lib/signals/resolve-game-image";
+import { getGameThemeStyle, resolveGameThemeColor } from "@/lib/signals/game-theme";
 import type { Jogo } from "@/lib/signals/types";
 
 export function TrendingGames({ jogos }: { jogos: Jogo[] }) {
@@ -27,6 +28,10 @@ export function TrendingGames({ jogos }: { jogos: Jogo[] }) {
       />
       <div ref={trackRef} className="trending-track -mx-4 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-4 pb-3 sm:mx-0 sm:px-0">
         {jogos.slice(0, 8).map((jogo) => {
+          const themeColor = resolveGameThemeColor({
+            signalColor: jogo.cor,
+            gameThemeColor: jogo.themeColor,
+          });
           const imageCandidates = buildGameImageCandidates({
             storageImageUrl: jogo.storageImageUrl,
             storageIconUrl: jogo.storageIconUrl,
@@ -40,7 +45,9 @@ export function TrendingGames({ jogos }: { jogos: Jogo[] }) {
               href={jogo.link}
               target="_blank"
               rel="noopener noreferrer"
-              className="trending-card group relative aspect-[4/5] w-[30vw] min-w-[108px] max-w-[132px] snap-start overflow-hidden rounded-2xl border border-white/10 bg-[var(--tenant-surface)] sm:w-[180px] sm:min-w-[180px] sm:max-w-none"
+              className="trending-card game-themed-card group relative aspect-[4/5] w-[30vw] min-w-[108px] max-w-[132px] snap-start overflow-hidden rounded-2xl border border-white/10 bg-[var(--tenant-surface)] sm:w-[180px] sm:min-w-[180px] sm:max-w-none"
+              data-themed={themeColor ? "true" : undefined}
+              style={getGameThemeStyle(themeColor)}
             >
               <img
                 src={imageCandidates[0]}
@@ -49,7 +56,7 @@ export function TrendingGames({ jogos }: { jogos: Jogo[] }) {
                 className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                 onError={(event) => applyGameImageFallback(event.currentTarget, imageCandidates)}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/5 to-black/15" />
+              <div className="game-image-detail absolute inset-0 bg-gradient-to-t from-black via-black/5 to-black/15" />
               <span className="absolute right-2 top-2 rounded-full bg-emerald-500 px-2 py-1 text-[10px] font-black text-white shadow-lg">{jogo.dist}%</span>
               <h3 className="absolute inset-x-2 bottom-2 line-clamp-2 text-[11px] font-black leading-tight text-white sm:text-sm">{jogo.nome}</h3>
             </a>

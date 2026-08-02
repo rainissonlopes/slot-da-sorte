@@ -16,8 +16,6 @@ import {
   FiCheck, 
   FiGlobe, 
   FiMessageSquare, 
-  FiInstagram, 
-  FiSend,
   FiRefreshCw,
   FiCpu,
   FiMenu,
@@ -28,7 +26,9 @@ import {
   FiImage,
   FiStar
 } from "react-icons/fi";
-import { GAME_IMAGE_PLACEHOLDER, resolveGameImage } from "@/lib/signals/resolve-game-image";
+import { applyGameImageFallback, buildGameImageCandidates, GAME_IMAGE_PLACEHOLDER, resolveGameImage } from "@/lib/signals/resolve-game-image";
+import { HeaderSocialLinks } from "@/components/signals/SocialNavigation";
+import { getGameThemeStyle, normalizeGameThemeColor, normalizeLegacySignalColor, resolveGameThemeColor } from "@/lib/signals/game-theme";
 import { DEFAULT_SITE_SECTIONS } from "@/lib/signals/site-sections";
 import {
   asJsonObject,
@@ -38,7 +38,9 @@ import {
   resolveSiteV2,
   type JsonObject,
 } from "@/lib/signals/config-v2";
-import type { GameMediaRow, Plataforma, SinalRow, SiteSectionConfig } from "@/lib/signals/types";
+import type { GameMediaRow, Plataforma, SinalRow, SiteSectionConfig, SocialNavId, SocialNavItemConfig } from "@/lib/signals/types";
+
+const EDITABLE_SOCIAL_IDS: SocialNavId[] = ["instagram", "telegram", "tiktok"];
 
 function normalizeAdminName(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().replace(/\s+/g, " ");
@@ -89,8 +91,6 @@ export default function AdminPage() {
 
   // Site Configuration states
   const [whatsapp, setWhatsapp] = useState("");
-  const [instagram, setInstagram] = useState("");
-  const [telegram, setTelegram] = useState("");
   const [popupLink, setPopupLink] = useState("");
   const [whatsappMensagem, setWhatsappMensagem] = useState("");
   const [headerBotaoTexto, setHeaderBotaoTexto] = useState("WhatsApp");
@@ -100,6 +100,7 @@ export default function AdminPage() {
   const [headerAtivo, setHeaderAtivo] = useState(true);
   const [ctaAtivo, setCtaAtivo] = useState(true);
   const [siteSections, setSiteSections] = useState<SiteSectionConfig[]>(DEFAULT_SITE_SECTIONS);
+  const [socialNav, setSocialNav] = useState<SocialNavItemConfig[]>(() => resolveSiteV2(null).socialNav);
   const [configSiteV2, setConfigSiteV2] = useState<JsonObject>({});
 
   // Appearance settings states (white-label)
@@ -142,6 +143,8 @@ export default function AdminPage() {
   const [ativoSinal, setAtivoSinal] = useState(true);
   const [destaqueSinal, setDestaqueSinal] = useState(false);
   const [gameIdSinal, setGameIdSinal] = useState("");
+  const [themeColorSinal, setThemeColorSinal] = useState("");
+  const [cardColorSaveError, setCardColorSaveError] = useState("");
 
   const [buscaSinal, setBuscaSinal] = useState("");
   const [sinaisVisiveis, setSinaisVisiveis] = useState(30);
@@ -157,6 +160,35 @@ export default function AdminPage() {
       && (imagemFiltro === "Todas" || (imagemFiltro === "Pendentes" ? imageInfo.placeholder : !imageInfo.placeholder));
   });
   const sinaisExibidos = sinaisFiltrados.slice(0, sinaisVisiveis);
+  const originalCardColor = normalizeLegacySignalColor(corBackground);
+  const normalizedCardColorOverride = normalizeGameThemeColor(themeColorSinal);
+  const resolvedCardColor = resolveGameThemeColor({
+    signalColor: corBackground,
+    gameThemeColor: themeColorSinal,
+  });
+  const hasCardColorOverride = normalizedCardColorOverride !== null;
+  const cardColorValidationError = themeColorSinal && !normalizedCardColorOverride
+    ? "Use exclusivamente hexadecimal no formato #RRGGBB."
+    : "";
+  const effectiveCardColor = resolvedCardColor || "#1C1C1E";
+  const cardColorOrigin = hasCardColorOverride
+    ? "Cor personalizada"
+    : originalCardColor
+      ? "Usando cor original"
+      : "Usando cor padrão";
+  const previewGame = games.find((game) => String(game.id) === gameIdSinal);
+  const previewImageCandidates = buildGameImageCandidates({
+    gameId: sinalEditando?.id || "preview",
+    category: categoriaJogo,
+    storageImageUrl: previewGame?.storage_image_url,
+    storageIconUrl: previewGame?.storage_icon_url,
+    rawImageUrl: imagemUrl,
+  });
+  const previewCardImage = previewImageCandidates[0] || GAME_IMAGE_PLACEHOLDER;
+  const previewBetValues = betsString.split(",").map((value) => value.trim()).filter(Boolean);
+  const previewBonus = previewBetValues[0] || "0.50";
+  const previewConnection = previewBetValues[1] || previewBonus;
+  const previewExtra = previewBetValues[2] || previewConnection;
 
   // Check user session
   useEffect(() => {
@@ -199,8 +231,6 @@ export default function AdminPage() {
       if (data) {
         const resolvedConfig = resolveSiteV2(data);
         setConfigSiteV2(asJsonObject(data.config_v2));
-        setInstagram(data.instagram || "");
-        setTelegram(data.telegram || "");
         setPopupLink(data.popup_link || "");
         setWhatsapp(resolvedConfig.whatsappNumber);
         setWhatsappMensagem(resolvedConfig.whatsappMessage);
@@ -211,6 +241,7 @@ export default function AdminPage() {
         setHeaderAtivo(resolvedConfig.headerActive);
         setCtaAtivo(resolvedConfig.ctaActive);
         setSiteSections(resolvedConfig.sections);
+        setSocialNav(resolvedConfig.socialNav);
       }
 
       if (error) {
@@ -278,7 +309,7 @@ export default function AdminPage() {
 
       const { data: gamesData, error: gamesError } = await supabase
         .from("games")
-        .select("id,external_id,provider_normalized,name,name_normalized,storage_image_url,storage_icon_url")
+        .select("*")
         .eq("source", "rei-dos-slots")
         .order("name");
 
@@ -303,12 +334,11 @@ export default function AdminPage() {
       ctaButtonText: ctaBotaoTexto,
       ctaActive: ctaAtivo,
       sections: siteSections,
+      socialNav,
     });
     const { data, error } = await supabase
       .from("config_site")
       .update({
-        instagram,
-        telegram,
         popup_link: popupLink,
         config_v2: nextConfigV2,
       })
@@ -596,6 +626,13 @@ export default function AdminPage() {
       ? betsString.split(",").map((b) => b.trim()).filter(Boolean)
       : [];
 
+    const normalizedThemeColor = themeColorSinal ? normalizeGameThemeColor(themeColorSinal) : null;
+    if (themeColorSinal && !normalizedThemeColor) {
+      setCardColorSaveError("Corrija a cor do card antes de salvar.");
+      return;
+    }
+    setCardColorSaveError("");
+
     const dados = {
       nome_jogo: nomeJogo,
       categoria_jogo: categoriaJogo,
@@ -622,6 +659,20 @@ export default function AdminPage() {
       return;
     }
 
+    if (gameIdSinal) {
+      const gameId = Number(gameIdSinal);
+      const { error: themeColorError } = await supabase
+        .from("games")
+        .update({ theme_color: normalizedThemeColor })
+        .eq("id", gameId);
+      if (themeColorError) {
+        console.log(themeColorError);
+        setCardColorSaveError("O sinal foi salvo, mas não foi possível salvar a cor personalizada do jogo.");
+        return;
+      }
+      setGames((current) => current.map((game) => Number(game.id) === gameId ? { ...game, theme_color: normalizedThemeColor } : game));
+    }
+
     alert(sinalEditando ? "Sinal atualizado!" : "Sinal adicionado!");
 
     setNomeJogo("");
@@ -632,12 +683,15 @@ export default function AdminPage() {
     setAtivoSinal(true);
     setDestaqueSinal(false);
     setGameIdSinal("");
+    setThemeColorSinal("");
+    setCardColorSaveError("");
     setSinalEditando(null);
 
     window.location.reload();
   }
 
   function editarSinal(s: any) {
+    const associatedGame = findAssociatedGame(s, games);
     setSinalEditando(s);
     setNomeJogo(s.nome_jogo || "");
     setCategoriaJogo(s.categoria_jogo || "PG");
@@ -646,7 +700,9 @@ export default function AdminPage() {
     setBetsString(s.bets ? s.bets.join(", ") : "");
     setAtivoSinal(s.ativo !== false);
     setDestaqueSinal(s.destaque === true);
-    setGameIdSinal(String(findAssociatedGame(s, games)?.id || ""));
+    setGameIdSinal(String(associatedGame?.id || ""));
+    setThemeColorSinal(associatedGame?.theme_color || "");
+    setCardColorSaveError("");
 
     setActiveTab("signals");
 
@@ -681,6 +737,17 @@ export default function AdminPage() {
     const { error } = await supabase.from("sinais").update({ ativo }).eq("id", sinal.id);
     if (error) return alert("Erro ao atualizar status do sinal");
     setSinais((current) => current.map((item) => item.id === sinal.id ? { ...item, ativo } : item));
+  }
+
+  function atualizarItemSocial(id: SocialNavId, changes: Partial<SocialNavItemConfig>) {
+    setSocialNav((current) => current.map((item) => item.id === id ? { ...item, ...changes } : item));
+  }
+
+  function selecionarGameSinal(value: string) {
+    setGameIdSinal(value);
+    const game = games.find((item) => String(item.id) === value);
+    setThemeColorSinal(game?.theme_color || "");
+    setCardColorSaveError("");
   }
 
   function atualizarSecao(id: SiteSectionConfig["id"], changes: Partial<SiteSectionConfig>) {
@@ -1278,6 +1345,8 @@ export default function AdminPage() {
                         setAtivoSinal(true);
                         setDestaqueSinal(false);
                         setGameIdSinal("");
+                        setThemeColorSinal("");
+                        setCardColorSaveError("");
                       }}
                       className="text-xs font-bold text-red-400 hover:text-red-350 uppercase transition-colors cursor-pointer"
                     >
@@ -1301,11 +1370,112 @@ export default function AdminPage() {
 
                   <div>
                     <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-500">Associação técnica com public.games</label>
-                    <select value={gameIdSinal} onChange={(event) => setGameIdSinal(event.target.value)} className="w-full h-11 rounded-xl bg-zinc-950/80 border border-zinc-800 px-4 text-sm text-white focus:border-emerald-500/50 focus:outline-none">
+                    <select value={gameIdSinal} onChange={(event) => selecionarGameSinal(event.target.value)} className="w-full h-11 rounded-xl bg-zinc-950/80 border border-zinc-800 px-4 text-sm text-white focus:border-emerald-500/50 focus:outline-none">
                       <option value="">Sem associação</option>
                       {games.filter((game) => game.provider_normalized === normalizeAdminProvider(categoriaJogo)).map((game) => <option key={game.id} value={game.id}>{game.name} · #{game.external_id}</option>)}
                     </select>
                     <p className="mt-1 text-[10px] text-zinc-600">Somente jogos do mesmo provider são exibidos.</p>
+                  </div>
+
+                  <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-4">
+                    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(240px,320px)]">
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400">Cor do card</label>
+                            <p className="mt-1 text-[10px] text-zinc-600">A personalização é salva em games.theme_color; sinais.cor_background continua sendo a cor original.</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setThemeColorSinal("");
+                              setCardColorSaveError("");
+                            }}
+                            disabled={!gameIdSinal || !themeColorSinal}
+                            className="shrink-0 text-[10px] font-black uppercase text-emerald-400 disabled:text-zinc-700"
+                          >
+                            Usar cor original
+                          </button>
+                        </div>
+
+                        <div className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-black/20 p-3" aria-live="polite">
+                          <span className="h-9 w-9 shrink-0 rounded-lg border border-white/20 shadow-sm" style={{ backgroundColor: effectiveCardColor }} aria-hidden="true" />
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-black uppercase tracking-wide text-zinc-300">{cardColorOrigin}</p>
+                            <p className="mt-0.5 font-mono text-xs text-white">{effectiveCardColor}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <input
+                            type="color"
+                            aria-label="Selecionar cor do card"
+                            value={effectiveCardColor}
+                            onChange={(event) => {
+                              setThemeColorSinal(event.target.value.toUpperCase());
+                              setCardColorSaveError("");
+                            }}
+                            disabled={!gameIdSinal}
+                            className="h-11 w-12 cursor-pointer rounded-lg border border-zinc-800 bg-zinc-950 p-1 disabled:cursor-not-allowed disabled:opacity-40"
+                          />
+                          <input
+                            aria-label="Cor hexadecimal do card"
+                            value={themeColorSinal}
+                            onChange={(event) => {
+                              setThemeColorSinal(event.target.value.toUpperCase());
+                              setCardColorSaveError("");
+                            }}
+                            onBlur={() => {
+                              const normalized = normalizeGameThemeColor(themeColorSinal);
+                              if (normalized) setThemeColorSinal(normalized);
+                            }}
+                            disabled={!gameIdSinal}
+                            maxLength={7}
+                            placeholder={originalCardColor || "#RRGGBB"}
+                            aria-invalid={Boolean(cardColorValidationError)}
+                            aria-describedby="card-color-feedback"
+                            className={`h-11 min-w-0 flex-1 rounded-xl border bg-zinc-950/80 px-4 font-mono text-sm text-white focus:outline-none disabled:cursor-not-allowed disabled:opacity-40 ${cardColorValidationError ? "border-red-500/70" : "border-zinc-800 focus:border-emerald-500/50"}`}
+                          />
+                        </div>
+                        <p id="card-color-feedback" className={`min-h-4 text-[10px] font-bold ${cardColorValidationError || cardColorSaveError ? "text-red-400" : "text-zinc-600"}`}>
+                          {cardColorValidationError || cardColorSaveError || "Formato aceito: #RRGGBB."}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="mb-2 text-[9px] font-black uppercase tracking-[.14em] text-zinc-500">Preview do card</p>
+                        <article className="signal-card mx-auto w-full max-w-[320px]" data-themed="true" style={getGameThemeStyle(effectiveCardColor)}>
+                          <div className="flex flex-col p-2.5 sm:p-3">
+                            <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-white/10 bg-white/5">
+                              {/* eslint-disable-next-line @next/next/no-img-element -- o preview precisa aceitar a mesma URL dinâmica do card público */}
+                              <img
+                                src={previewCardImage}
+                                alt={nomeJogo ? `Preview de ${nomeJogo}` : "Preview do jogo"}
+                                className="h-full w-full object-cover"
+                                onError={(event) => applyGameImageFallback(event.currentTarget, previewImageCandidates)}
+                              />
+                              <div className="game-image-detail absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent px-2 pb-2 pt-7">
+                                <span className="text-[9px] font-bold uppercase tracking-wide text-white/85">{categoriaJogo || "Provider"}</span>
+                              </div>
+                            </div>
+                            <h3 className="game-card-title mt-2.5 font-black text-white">{nomeJogo || "Nome do jogo"}</h3>
+                            <p className="mt-0.5 truncate text-[9px] font-bold uppercase tracking-wide text-[var(--tenant-muted)]">{categoriaJogo || "Provider"}</p>
+                            <div className="game-bet-suggestions mt-3 rounded-xl border border-white/8 bg-black/20 p-2">
+                              <p className="mb-1.5 text-[8px] font-black uppercase tracking-[.12em] text-[var(--tenant-muted)]">Sugestões de aposta</p>
+                              <div className="grid grid-cols-3 gap-1 text-center text-[8px]">
+                                {[["Bônus", previewBonus], ["Conexão", previewConnection], ["Extra", previewExtra]].map(([label, value]) => (
+                                  <div key={label} className="min-w-0 rounded-md bg-white/5 px-0.5 py-1.5">
+                                    <span className="block truncate text-white/50">{label}</span>
+                                    <strong className="mt-0.5 block truncate text-white">{value}</strong>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                            <span className="game-access-button signal-button mt-2.5 w-full px-1 py-2 text-[10px]">Acessar</span>
+                          </div>
+                        </article>
+                      </div>
+                    </div>
                   </div>
 
                   <div>
@@ -1314,7 +1484,12 @@ export default function AdminPage() {
                     </label>
                     <select
                       value={categoriaJogo}
-                      onChange={(e) => setCategoriaJogo(e.target.value)}
+                      onChange={(e) => {
+                        setCategoriaJogo(e.target.value);
+                        setGameIdSinal("");
+                        setThemeColorSinal("");
+                        setCardColorSaveError("");
+                      }}
                       className="w-full h-11 rounded-xl bg-zinc-955/80 border border-zinc-800 px-4 text-sm text-white focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all"
                     >
                       <option value="PG">PG Games</option>
@@ -1559,35 +1734,38 @@ export default function AdminPage() {
                   <ToggleField label="Exibir CTA inferior" checked={ctaAtivo} onChange={setCtaAtivo} />
                 </div>
 
-                {/* Instagram */}
-                <div>
-                  <label className="block mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-                    <FiInstagram className="text-pink-400" /> Link do Instagram
-                  </label>
-                  <div className="relative">
-                    <FiInstagram className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 w-4.5 h-4.5" />
-                    <input
-                      value={instagram}
-                      onChange={(e) => setInstagram(e.target.value)}
-                      placeholder="ex: https://instagram.com/usuario"
-                      className="w-full h-12 pl-11 pr-4 rounded-xl bg-zinc-955/80 border border-zinc-800 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all"
-                    />
+                <div className="space-y-3 border-t border-zinc-900 pt-5">
+                  <div>
+                    <h4 className="text-xs font-black uppercase tracking-wider text-white">Redes sociais do header</h4>
+                    <p className="mt-1 text-[10px] text-zinc-500">Instagram, Telegram e TikTok aparecem de forma discreta antes do WhatsApp.</p>
                   </div>
-                </div>
-
-                {/* Telegram */}
-                <div>
-                  <label className="block mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-                    <FiSend className="text-blue-400" /> Link do Telegram
-                  </label>
-                  <div className="relative">
-                    <FiSend className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 w-4.5 h-4.5" />
-                    <input
-                      value={telegram}
-                      onChange={(e) => setTelegram(e.target.value)}
-                      placeholder="ex: https://t.me/canal"
-                      className="w-full h-12 pl-11 pr-4 rounded-xl bg-zinc-955/80 border border-zinc-800 text-sm text-white placeholder-zinc-655 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all"
-                    />
+                  {EDITABLE_SOCIAL_IDS.map((id) => {
+                    const item = socialNav.find((socialItem) => socialItem.id === id);
+                    if (!item) return null;
+                    return (
+                      <div key={id} className="space-y-3 rounded-xl border border-zinc-800 bg-zinc-950/55 p-4">
+                        <div>
+                          <div>
+                            <label className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-zinc-500">Label</label>
+                            <input value={item.label} onChange={(event) => atualizarItemSocial(id, { label: event.target.value })} className="h-10 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 text-sm text-white focus:border-emerald-500/50 focus:outline-none" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-zinc-500">URL</label>
+                          <input type="url" value={item.url} onChange={(event) => atualizarItemSocial(id, { url: event.target.value })} placeholder="https://..." className="h-10 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 text-sm text-white placeholder-zinc-700 focus:border-emerald-500/50 focus:outline-none" />
+                        </div>
+                        <div>
+                          <ToggleField label="Ativo" checked={item.enabled} onChange={(enabled) => atualizarItemSocial(id, { enabled })} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div className="rounded-xl border border-zinc-800 bg-[#050806] p-3 [--tenant-primary:#16A34A] [--tenant-surface:#101512]">
+                    <p className="mb-3 text-[10px] font-black uppercase tracking-wider text-zinc-500">Preview</p>
+                    <div className="flex min-h-14 items-center justify-between gap-2 rounded-xl border border-white/10 bg-black/75 px-3">
+                      <div className="flex items-center gap-2"><span className="grid h-8 w-8 place-items-center rounded-lg bg-white/10 text-[9px] font-black">LOGO</span><strong className="hidden text-xs text-white sm:block">Marca</strong></div>
+                      <div className="header-actions"><HeaderSocialLinks items={socialNav} preview /><span className="header-whatsapp signal-button px-3 py-2 text-[10px]">WhatsApp</span></div>
+                    </div>
                   </div>
                 </div>
 

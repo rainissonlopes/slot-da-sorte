@@ -121,6 +121,36 @@ input {
   border-color: rgb(59 130 246 / 0.25);
 }
 
+/* Keep the legacy per-game color visibly above the classic tenant fallback. */
+.signal-card[data-themed="true"],
+.game-themed-card[data-themed="true"] {
+  border-color: color-mix(in srgb, var(--game-theme) 75%, white);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--game-theme) 42%, #101010) 0%,
+    color-mix(in srgb, var(--game-theme) 28%, #101010) 38%,
+    #101010 100%
+  );
+  box-shadow: 0 0 18px color-mix(in srgb, var(--game-theme) 28%, transparent);
+}
+
+.signal-card[data-themed="true"]::before {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--game-theme) 72%, transparent), transparent);
+  content: "";
+}
+
+.signal-card[data-themed="true"] .game-bet-suggestions {
+  border-color: color-mix(in srgb, var(--game-theme) 32%, transparent);
+  background: color-mix(in srgb, var(--game-theme) 18%, #0c1511);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--game-theme) 16%, transparent);
+}
+
+.signal-card[data-themed="true"] .game-image-detail,
+.game-themed-card[data-themed="true"] .game-image-detail {
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--game-theme) 42%, transparent);
+}
+
 .game-card-title {
   display: -webkit-box;
   overflow: hidden;
@@ -135,6 +165,57 @@ input {
 .signal-card:hover {
   border-color: color-mix(in srgb, var(--tenant-primary) 38%, transparent);
   transform: translateY(-2px);
+}
+
+.signal-card[data-themed="true"]:hover {
+  border-color: color-mix(in srgb, var(--game-theme) 82%, white);
+}
+
+.header-actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: nowrap;
+}
+
+.header-social-links {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.15rem;
+  order: 1;
+}
+
+.header-social-link {
+  display: inline-flex;
+  min-height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border: 1px solid transparent;
+  border-radius: 0.65rem;
+  background: rgb(255 255 255 / 0.025);
+  padding: 0.45rem 0.6rem;
+  color: rgb(255 255 255 / 0.7);
+  font-size: 0.7rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.header-social-link:hover {
+  border-color: color-mix(in srgb, var(--tenant-primary, #16a34a) 24%, transparent);
+  background: color-mix(in srgb, var(--tenant-primary, #16a34a) 8%, transparent);
+  color: color-mix(in srgb, var(--tenant-primary, #16a34a) 76%, white);
+}
+
+.header-social-label {
+  display: none;
+}
+
+.header-whatsapp {
+  flex: none;
+  order: 2;
 }
 
 .carousel-arrow {
@@ -232,6 +313,18 @@ input {
   opacity: 0.55;
 }
 
+.game-access-button {
+  background-color: #00a63e;
+}
+
+.game-access-button:hover {
+  background-color: #008f35;
+}
+
+.game-access-button:active {
+  background-color: #007d2e;
+}
+
 .signal-action-icon {
   background-color: var(--tenant-action);
   color: var(--tenant-action-text);
@@ -325,6 +418,20 @@ input {
 }
 
 @media (max-width: 639px) {
+  .header-whatsapp {
+    order: 1;
+  }
+
+  .header-social-links {
+    gap: 0;
+    order: 2;
+  }
+
+  .header-social-link {
+    width: 2.25rem;
+    padding: 0;
+  }
+
   .section-heading {
     align-items: start;
     flex-direction: column;
@@ -332,6 +439,18 @@ input {
 
   .section-heading > p {
     text-align: left;
+  }
+}
+
+@media (max-width: 379px) {
+  .header-social-tiktok {
+    display: none;
+  }
+}
+
+@media (min-width: 900px) {
+  .header-social-label {
+    display: inline;
   }
 }
 

@@ -1,6 +1,7 @@
 import { ArrowUpRight, Flame, Heart, Minus, Snowflake, TrendingDown, TrendingUp } from "lucide-react";
 import { applyGameImageFallback, buildGameImageCandidates } from "@/lib/signals/resolve-game-image";
 import { getSignalMetricBarClass } from "@/lib/signals/get-signal-metric-bar-class";
+import { getGameThemeStyle, resolveGameThemeColor } from "@/lib/signals/game-theme";
 import type { Jogo, SugestoesAposta } from "@/lib/signals/types";
 
 const barInfo = [
@@ -23,12 +24,16 @@ export function GameCard({ jogo, favorito, onFavorito, calcularSugestoes }: {
     category: jogo.cat,
   });
   const imageUrl = imageCandidates[0];
+  const themeColor = resolveGameThemeColor({
+    signalColor: jogo.cor,
+    gameThemeColor: jogo.themeColor,
+  });
   return (
-    <article className="signal-card group" data-state={jogo.estado || "Neutro"}>
+    <article className="signal-card group" data-state={jogo.estado || "Neutro"} data-themed={themeColor ? "true" : undefined} style={getGameThemeStyle(themeColor)}>
       <div className="flex flex-1 flex-col p-2.5 sm:p-3">
         <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-white/10 bg-white/5">
           <img src={imageUrl} alt={jogo.nome} data-game-image-candidate-index="0" className="h-full w-full object-cover" onError={(event) => applyGameImageFallback(event.currentTarget, imageCandidates)} />
-          <div className="absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/90 to-transparent px-2 pb-2 pt-7 [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]">
+          <div className="game-image-detail absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/90 to-transparent px-2 pb-2 pt-7 [text-shadow:0_1px_3px_rgba(0,0,0,0.7)]">
             <span className="text-[9px] font-bold text-white/85 sm:text-[10px]">Distribuição</span>
             <strong className="text-sm font-black text-white sm:text-base">{jogo.dist}%</strong>
           </div>
@@ -52,13 +57,13 @@ export function GameCard({ jogo, favorito, onFavorito, calcularSugestoes }: {
         <div className="mt-3 space-y-2">
           {barInfo.map(([label, key]) => <div key={key}><div className="mb-1 flex justify-between gap-1 text-[9px] font-bold text-white/70 sm:text-[10px]"><span className="truncate">{label}</span><span>{jogo[key]}%</span></div><div className="h-1.5 overflow-hidden rounded-full bg-white/8"><div className={`h-full rounded-full ${getSignalMetricBarClass(jogo[key])}`} style={{ width: `${jogo[key]}%` }} /></div></div>)}
         </div>
-        <div className="mt-3 rounded-xl border border-white/8 bg-black/20 p-2">
+        <div className="game-bet-suggestions mt-3 rounded-xl border border-white/8 bg-black/20 p-2">
           <p className="mb-1.5 truncate text-[8px] font-black uppercase tracking-[.12em] text-[var(--tenant-muted)] sm:text-[9px]">Sugestões de aposta</p>
           <div className="grid grid-cols-3 gap-1 text-center text-[8px] sm:text-[9px]"><Bet label="Bônus" value={sugestoes.bonus} /><Bet label="Conexão" value={sugestoes.conexao} /><Bet label="Extra" value={sugestoes.extra} /></div>
           <div className="mt-1 grid grid-cols-2 gap-1 text-center text-[8px] sm:text-[9px]"><Bet label="Padrão" value={`${sugestoes.p1} / ${sugestoes.p2}`} /><Bet label="Máxima" value={`${sugestoes.m1} / ${sugestoes.m2}`} /></div>
         </div>
         {jogo.plataforma && <p className="mt-2 truncate text-[9px] text-[var(--tenant-muted)]">Em <strong className="text-white/80">{jogo.plataforma.nome}</strong></p>}
-        <a href={jogo.link} target="_blank" rel="noopener noreferrer" className="signal-button mt-2.5 w-full px-1 py-2 text-[10px] sm:text-xs">Acessar <ArrowUpRight size={14} /></a>
+        <a href={jogo.link} target="_blank" rel="noopener noreferrer" className="game-access-button signal-button mt-2.5 w-full px-1 py-2 text-[10px] sm:text-xs">Acessar <ArrowUpRight size={14} /></a>
       </div>
     </article>
   );
