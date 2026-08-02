@@ -1,7 +1,7 @@
 import { MessageCircle, Radio } from "lucide-react";
 import type { Aparencia } from "@/lib/signals/types";
 
-export function SiteHeader({ aparencia, whatsapp }: { aparencia: Aparencia | null; whatsapp?: string }) {
+export function SiteHeader({ aparencia, whatsapp, buttonText = "WhatsApp", active = true }: { aparencia: Aparencia | null; whatsapp?: string; buttonText?: string; active?: boolean }) {
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-black/75 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:h-20 sm:px-6">
@@ -15,9 +15,9 @@ export function SiteHeader({ aparencia, whatsapp }: { aparencia: Aparencia | nul
           <span className="hidden items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-xs font-bold text-emerald-300 sm:flex">
             <Radio size={14} aria-hidden /> Sinais em tempo real
           </span>
-          {whatsapp && (
+          {active && whatsapp && (
             <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="signal-button px-3 py-2 text-xs sm:px-4">
-              <MessageCircle size={16} aria-hidden /><span className="hidden sm:inline">WhatsApp</span>
+              <MessageCircle size={16} aria-hidden /><span className="hidden sm:inline">{buttonText}</span>
             </a>
           )}
         </div>

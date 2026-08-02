@@ -1,7 +1,7 @@
 import { MessageCircle } from "lucide-react";
 import { SectionHeading } from "@/components/signals/SectionHeading";
 
-export function WhatsAppBanner({ whatsapp }: { whatsapp?: string }) {
+export function WhatsAppBanner({ whatsapp, title = "Receba os sinais no WhatsApp", description = "Entre no grupo e receba atualizações, jogos em alta e novos sinais.", buttonText = "Entrar no grupo" }: { whatsapp?: string; title?: string; description?: string; buttonText?: string }) {
   if (!whatsapp) return null;
 
   return (
@@ -9,11 +9,11 @@ export function WhatsAppBanner({ whatsapp }: { whatsapp?: string }) {
       <SectionHeading
         icon={<MessageCircle aria-hidden="true" />}
         eyebrow="Fique por dentro"
-        title="Receba os sinais no WhatsApp"
-        description="Entre no grupo e receba atualizações, jogos em alta e novos sinais."
+        title={title}
+        description={description}
         action={
           <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="signal-button shrink-0 px-5 py-3">
-            <MessageCircle size={19} /> Entrar no grupo
+            <MessageCircle size={19} /> {buttonText}
           </a>
         }
       />

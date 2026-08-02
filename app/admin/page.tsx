@@ -21,8 +21,58 @@ import {
   FiRefreshCw,
   FiCpu,
   FiMenu,
-  FiX
+  FiX,
+  FiArrowUp,
+  FiArrowDown,
+  FiEye,
+  FiImage,
+  FiStar
 } from "react-icons/fi";
+import { GAME_IMAGE_PLACEHOLDER, resolveGameImage } from "@/lib/signals/resolve-game-image";
+import { DEFAULT_SITE_SECTIONS } from "@/lib/signals/site-sections";
+import {
+  asJsonObject,
+  mergeAppearanceV2,
+  mergeSiteV2,
+  resolveAppearanceV2,
+  resolveSiteV2,
+  type JsonObject,
+} from "@/lib/signals/config-v2";
+import type { GameMediaRow, Plataforma, SinalRow, SiteSectionConfig } from "@/lib/signals/types";
+
+function normalizeAdminName(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().replace(/\s+/g, " ");
+}
+
+function normalizeAdminProvider(value: string) {
+  return value.trim().toLowerCase().replace(" games", "");
+}
+
+function findAssociatedGame(signal: SinalRow, games: GameMediaRow[]) {
+  if (signal.game_id) {
+    const byId = games.find((game) => Number(game.id) === Number(signal.game_id));
+    if (byId) return byId;
+  }
+  const provider = normalizeAdminProvider(signal.categoria_jogo || "");
+  const name = normalizeAdminName(signal.nome_jogo || "");
+  return games.find((game) => game.provider_normalized === provider && game.name_normalized === name) || null;
+}
+
+function getSignalImageInfo(signal: SinalRow, games: GameMediaRow[]) {
+  const game = findAssociatedGame(signal, games);
+  const src = resolveGameImage({
+    gameId: signal.id,
+    category: signal.categoria_jogo,
+    storageImageUrl: game?.storage_image_url,
+    storageIconUrl: game?.storage_icon_url,
+    rawImageUrl: signal.imagem_url,
+  });
+  return { src, game, placeholder: src === GAME_IMAGE_PLACEHOLDER };
+}
+
+function ToggleField({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
+  return <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-zinc-800 bg-zinc-950/60 px-4 py-3 text-xs font-bold text-zinc-300"><span>{label}</span><input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="h-4 w-4 accent-emerald-500" /></label>;
+}
 
 export default function AdminPage() {
   const [loadingSession, setLoadingSession] = useState(true);
@@ -42,6 +92,15 @@ export default function AdminPage() {
   const [instagram, setInstagram] = useState("");
   const [telegram, setTelegram] = useState("");
   const [popupLink, setPopupLink] = useState("");
+  const [whatsappMensagem, setWhatsappMensagem] = useState("");
+  const [headerBotaoTexto, setHeaderBotaoTexto] = useState("WhatsApp");
+  const [ctaTitulo, setCtaTitulo] = useState("Receba os sinais no WhatsApp");
+  const [ctaDescricao, setCtaDescricao] = useState("Entre no grupo e receba atualizações, jogos em alta e novos sinais.");
+  const [ctaBotaoTexto, setCtaBotaoTexto] = useState("Entrar no grupo");
+  const [headerAtivo, setHeaderAtivo] = useState(true);
+  const [ctaAtivo, setCtaAtivo] = useState(true);
+  const [siteSections, setSiteSections] = useState<SiteSectionConfig[]>(DEFAULT_SITE_SECTIONS);
+  const [configSiteV2, setConfigSiteV2] = useState<JsonObject>({});
 
   // Appearance settings states (white-label)
   const [nomeSite, setNomeSite] = useState("");
@@ -53,6 +112,13 @@ export default function AdminPage() {
   const [subtituloHome, setSubtituloHome] = useState("");
   const [textoCta, setTextoCta] = useState("");
   const [bannerPrincipalUrl, setBannerPrincipalUrl] = useState("");
+  const [corBotoes, setCorBotoes] = useState("#00a63e");
+  const [corFundo, setCorFundo] = useState("#050806");
+  const [corCards, setCorCards] = useState("#101512");
+  const [textoRodape, setTextoRodape] = useState("");
+  const [bannerLink, setBannerLink] = useState("");
+  const [bannerAtivo, setBannerAtivo] = useState(true);
+  const [appearanceV2, setAppearanceV2] = useState<JsonObject>({});
 
   // Platforms states
   const [plataformas, setPlataformas] = useState<any[]>([]);
@@ -60,6 +126,8 @@ export default function AdminPage() {
   const [linkPlataforma, setLinkPlataforma] = useState("");
   const [imagemPlataforma, setImagemPlataforma] = useState("");
   const [ordemPlataforma, setOrdemPlataforma] = useState(0);
+  const [isNewPlataforma, setIsNewPlataforma] = useState(false);
+  const [ativoPlataforma, setAtivoPlataforma] = useState(true);
   const [plataformaEditando, setPlataformaEditando] = useState<any>(null);
 
   // Signals states
@@ -70,13 +138,24 @@ export default function AdminPage() {
   const [corBackground, setCorBackground] = useState("#1c1c1e");
   const [betsString, setBetsString] = useState("");
   const [sinalEditando, setSinalEditando] = useState<any>(null);
+  const [games, setGames] = useState<GameMediaRow[]>([]);
+  const [ativoSinal, setAtivoSinal] = useState(true);
+  const [destaqueSinal, setDestaqueSinal] = useState(false);
+  const [gameIdSinal, setGameIdSinal] = useState("");
 
   const [buscaSinal, setBuscaSinal] = useState("");
   const [sinaisVisiveis, setSinaisVisiveis] = useState(30);
+  const [providerFiltro, setProviderFiltro] = useState("Todos");
+  const [ativoFiltro, setAtivoFiltro] = useState("Todos");
+  const [imagemFiltro, setImagemFiltro] = useState("Todas");
 
-  const sinaisFiltrados = sinais.filter((s) =>
-    s.nome_jogo.toLowerCase().includes(buscaSinal.toLowerCase().trim())
-  );
+  const sinaisFiltrados = sinais.filter((s) => {
+    const imageInfo = getSignalImageInfo(s, games);
+    return s.nome_jogo.toLowerCase().includes(buscaSinal.toLowerCase().trim())
+      && (providerFiltro === "Todos" || s.categoria_jogo === providerFiltro)
+      && (ativoFiltro === "Todos" || (ativoFiltro === "Ativos" ? s.ativo !== false : s.ativo === false))
+      && (imagemFiltro === "Todas" || (imagemFiltro === "Pendentes" ? imageInfo.placeholder : !imageInfo.placeholder));
+  });
   const sinaisExibidos = sinaisFiltrados.slice(0, sinaisVisiveis);
 
   // Check user session
@@ -118,10 +197,20 @@ export default function AdminPage() {
         .single();
 
       if (data) {
-        setWhatsapp(data.whatsapp || "");
+        const resolvedConfig = resolveSiteV2(data);
+        setConfigSiteV2(asJsonObject(data.config_v2));
         setInstagram(data.instagram || "");
         setTelegram(data.telegram || "");
         setPopupLink(data.popup_link || "");
+        setWhatsapp(resolvedConfig.whatsappNumber);
+        setWhatsappMensagem(resolvedConfig.whatsappMessage);
+        setHeaderBotaoTexto(resolvedConfig.headerButtonText);
+        setCtaTitulo(resolvedConfig.ctaTitle);
+        setCtaDescricao(resolvedConfig.ctaDescription);
+        setCtaBotaoTexto(resolvedConfig.ctaButtonText);
+        setHeaderAtivo(resolvedConfig.headerActive);
+        setCtaAtivo(resolvedConfig.ctaActive);
+        setSiteSections(resolvedConfig.sections);
       }
 
       if (error) {
@@ -136,6 +225,8 @@ export default function AdminPage() {
         .maybeSingle();
 
       if (aparenciaData) {
+        const resolvedAppearance = resolveAppearanceV2(aparenciaData);
+        setAppearanceV2(asJsonObject(aparenciaData.config_v2));
         setNomeSite(aparenciaData.nome_site || "Slot da Sorte");
         setLogoUrl(aparenciaData.logo_url || "");
         setFaviconUrl(aparenciaData.favicon_url || "");
@@ -144,7 +235,13 @@ export default function AdminPage() {
         setTituloHome(aparenciaData.titulo_home || "");
         setSubtituloHome(aparenciaData.subtitulo_home || "");
         setTextoCta(aparenciaData.texto_cta || "");
-        setBannerPrincipalUrl(aparenciaData.banner_principal_url || "");
+        setBannerPrincipalUrl(resolvedAppearance.bannerUrl);
+        setCorBotoes(resolvedAppearance.buttonColor);
+        setCorFundo(resolvedAppearance.backgroundColor);
+        setCorCards(resolvedAppearance.cardColor);
+        setTextoRodape(resolvedAppearance.footerText);
+        setBannerLink(resolvedAppearance.bannerLink);
+        setBannerAtivo(resolvedAppearance.bannerActive);
       }
 
       if (aparenciaError) {
@@ -179,6 +276,15 @@ export default function AdminPage() {
         console.log(sinaisError);
       }
 
+      const { data: gamesData, error: gamesError } = await supabase
+        .from("games")
+        .select("id,external_id,provider_normalized,name,name_normalized,storage_image_url,storage_icon_url")
+        .eq("source", "rei-dos-slots")
+        .order("name");
+
+      if (gamesData) setGames(gamesData);
+      if (gamesError) console.log(gamesError);
+
       setLastFetchTime(new Date().toLocaleTimeString("pt-BR"));
     }
 
@@ -187,13 +293,24 @@ export default function AdminPage() {
 
   // CRUD site config
   async function salvar() {
+    const nextConfigV2 = mergeSiteV2(configSiteV2, {
+      whatsappNumber: whatsapp,
+      whatsappMessage: whatsappMensagem,
+      headerButtonText: headerBotaoTexto,
+      headerActive: headerAtivo,
+      ctaTitle: ctaTitulo,
+      ctaDescription: ctaDescricao,
+      ctaButtonText: ctaBotaoTexto,
+      ctaActive: ctaAtivo,
+      sections: siteSections,
+    });
     const { data, error } = await supabase
       .from("config_site")
       .update({
-        whatsapp,
         instagram,
         telegram,
         popup_link: popupLink,
+        config_v2: nextConfigV2,
       })
       .eq("id", 1)
       .select();
@@ -207,11 +324,21 @@ export default function AdminPage() {
       return;
     }
 
+    setConfigSiteV2(nextConfigV2);
     alert("Salvo!");
   }
 
   // CRUD appearance (white-label)
   async function salvarAparencia() {
+    const nextConfigV2 = mergeAppearanceV2(appearanceV2, {
+      buttonColor: corBotoes,
+      backgroundColor: corFundo,
+      cardColor: corCards,
+      footerText: textoRodape,
+      bannerUrl: bannerPrincipalUrl,
+      bannerLink,
+      bannerActive: bannerAtivo,
+    });
     const { error } = await supabase
       .from("aparencia")
       .update({
@@ -223,7 +350,7 @@ export default function AdminPage() {
         titulo_home: tituloHome,
         subtitulo_home: subtituloHome,
         texto_cta: textoCta,
-        banner_principal_url: bannerPrincipalUrl,
+        config_v2: nextConfigV2,
       })
       .eq("domain", "default");
 
@@ -233,6 +360,7 @@ export default function AdminPage() {
       return;
     }
 
+    setAppearanceV2(nextConfigV2);
     alert("Configurações de aparência salvas com sucesso!");
   }
 
@@ -362,8 +490,9 @@ export default function AdminPage() {
       nome: nomePlataforma,
       link: linkPlataforma,
       imagem: imagemPlataforma,
-      ativo: true,
+      ativo: ativoPlataforma,
       ordem: ordemPlataforma,
+      is_new: isNewPlataforma,
     };
 
     const { error } = plataformaEditando
@@ -387,6 +516,8 @@ export default function AdminPage() {
     setLinkPlataforma("");
     setImagemPlataforma("");
     setOrdemPlataforma(0);
+    setIsNewPlataforma(false);
+    setAtivoPlataforma(true);
     setPlataformaEditando(null);
 
     window.location.reload();
@@ -398,6 +529,8 @@ export default function AdminPage() {
     setLinkPlataforma(p.link || "");
     setImagemPlataforma(p.imagem || "");
     setOrdemPlataforma(p.ordem || 0);
+    setIsNewPlataforma(p.is_new === true);
+    setAtivoPlataforma(p.ativo !== false);
 
     setActiveTab("platforms");
 
@@ -427,6 +560,31 @@ export default function AdminPage() {
     window.location.reload();
   }  
 
+  async function atualizarStatusPlataforma(plataforma: Plataforma) {
+    const ativo = plataforma.ativo === false;
+    const { error } = await supabase.from("plataformas").update({ ativo }).eq("id", plataforma.id);
+    if (error) return alert("Erro ao atualizar status da plataforma");
+    setPlataformas((current) => current.map((item) => item.id === plataforma.id ? { ...item, ativo } : item));
+  }
+
+  async function moverPlataforma(index: number, direction: -1 | 1) {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= plataformas.length) return;
+    const current = plataformas[index];
+    const target = plataformas[targetIndex];
+    const currentOrder = Number(current.ordem ?? index);
+    const targetOrder = Number(target.ordem ?? targetIndex);
+    const [{ error: currentError }, { error: targetError }] = await Promise.all([
+      supabase.from("plataformas").update({ ordem: targetOrder }).eq("id", current.id),
+      supabase.from("plataformas").update({ ordem: currentOrder }).eq("id", target.id),
+    ]);
+    if (currentError || targetError) return alert("Erro ao reordenar plataformas");
+    const reordered = [...plataformas];
+    reordered[index] = { ...target, ordem: currentOrder };
+    reordered[targetIndex] = { ...current, ordem: targetOrder };
+    setPlataformas(reordered);
+  }
+
   // CRUD signals
   async function adicionarSinal() {
     if (!nomeJogo || !categoriaJogo || !imagemUrl) {
@@ -444,6 +602,9 @@ export default function AdminPage() {
       imagem_url: imagemUrl,
       cor_background: corBackground || "#1c1c1e",
       bets: betsArray,
+      ativo: ativoSinal,
+      destaque: destaqueSinal,
+      game_id: gameIdSinal ? Number(gameIdSinal) : null,
     };
 
     const { error } = sinalEditando
@@ -468,6 +629,9 @@ export default function AdminPage() {
     setImagemUrl("");
     setCorBackground("#1c1c1e");
     setBetsString("");
+    setAtivoSinal(true);
+    setDestaqueSinal(false);
+    setGameIdSinal("");
     setSinalEditando(null);
 
     window.location.reload();
@@ -480,6 +644,9 @@ export default function AdminPage() {
     setImagemUrl(s.imagem_url || "");
     setCorBackground(s.cor_background || "#1c1c1e");
     setBetsString(s.bets ? s.bets.join(", ") : "");
+    setAtivoSinal(s.ativo !== false);
+    setDestaqueSinal(s.destaque === true);
+    setGameIdSinal(String(findAssociatedGame(s, games)?.id || ""));
 
     setActiveTab("signals");
 
@@ -509,6 +676,25 @@ export default function AdminPage() {
     window.location.reload();
   }
 
+  async function atualizarStatusSinal(sinal: SinalRow) {
+    const ativo = sinal.ativo === false;
+    const { error } = await supabase.from("sinais").update({ ativo }).eq("id", sinal.id);
+    if (error) return alert("Erro ao atualizar status do sinal");
+    setSinais((current) => current.map((item) => item.id === sinal.id ? { ...item, ativo } : item));
+  }
+
+  function atualizarSecao(id: SiteSectionConfig["id"], changes: Partial<SiteSectionConfig>) {
+    setSiteSections((current) => current.map((section) => section.id === id ? { ...section, ...changes } : section));
+  }
+
+  function moverSecao(index: number, direction: -1 | 1) {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= siteSections.length) return;
+    const reordered = [...siteSections];
+    [reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]];
+    setSiteSections(reordered.map((section, ordem) => ({ ...section, ordem })));
+  }
+
   // Session verification loader
   if (loadingSession) {
     return (
@@ -530,6 +716,7 @@ export default function AdminPage() {
     { id: "signals", label: "Sinais de Slots", icon: FiPlayCircle },
     { id: "config", label: "Redes Sociais", icon: FiSettings },
     { id: "appearance", label: "Aparência", icon: FiGlobe },
+    { id: "sections", label: "Seções do site", icon: FiGrid },
   ];
 
   const SidebarContent = () => (
@@ -710,6 +897,7 @@ export default function AdminPage() {
               {activeTab === "signals" && "Sinais de Slots"}
               {activeTab === "config" && "Redes Sociais"}
               {activeTab === "appearance" && "Aparência & Identidade"}
+              {activeTab === "sections" && "Seções do site"}
             </h2>
           </div>
 
@@ -903,6 +1091,8 @@ export default function AdminPage() {
                         setLinkPlataforma("");
                         setImagemPlataforma("");
                         setOrdemPlataforma(0);
+                        setIsNewPlataforma(false);
+                        setAtivoPlataforma(true);
                       }}
                       className="text-xs font-bold text-red-400 hover:text-red-355 uppercase transition-colors cursor-pointer"
                     >
@@ -945,6 +1135,17 @@ export default function AdminPage() {
                     "aspect-square"
                   )}
 
+                  {imagemPlataforma && (
+                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-3">
+                      <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-zinc-500">Preview do card</p>
+                      <div className="relative mx-auto aspect-square max-w-40 overflow-hidden rounded-2xl border border-white/10">
+                        <img src={imagemPlataforma} alt="Preview da plataforma" className="h-full w-full object-cover" />
+                        {isNewPlataforma && <span className="absolute right-2 top-2 rounded-full bg-amber-400 px-2 py-1 text-[9px] font-black text-black">NOVA</span>}
+                      </div>
+                      <p className="mt-2 truncate text-center text-xs font-bold text-white">{nomePlataforma || "Nome da plataforma"}</p>
+                    </div>
+                  )}
+
                   <div>
                     <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-505">
                       Ordem de Exibição
@@ -956,6 +1157,11 @@ export default function AdminPage() {
                       placeholder="0"
                       className="w-full h-11 rounded-xl bg-zinc-955/80 border border-zinc-800 px-4 text-sm text-white placeholder-zinc-650 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all"
                     />
+                  </div>
+
+                  <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+                    <ToggleField label="Marcar como nova" checked={isNewPlataforma} onChange={setIsNewPlataforma} />
+                    <ToggleField label="Plataforma ativa" checked={ativoPlataforma} onChange={setAtivoPlataforma} />
                   </div>
 
                   <button
@@ -990,7 +1196,7 @@ export default function AdminPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-900/80">
-                      {plataformas.map((p) => (
+                      {plataformas.map((p, index) => (
                         <tr key={p.id} className="hover:bg-zinc-900/30 transition-all duration-150">
                           <td className="px-5 py-4">
                             <img
@@ -1008,13 +1214,16 @@ export default function AdminPage() {
                           </td>
                           <td className="px-5 py-4 text-sm text-zinc-405 font-mono font-bold">{p.ordem}</td>
                           <td className="px-5 py-4">
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-[9px] font-black uppercase rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                              Ativo
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 text-[9px] font-black uppercase rounded-full border ${p.ativo === false ? "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${p.ativo === false ? "bg-zinc-500" : "bg-emerald-500 animate-pulse"}`}></span>
+                              {p.ativo === false ? "Inativa" : "Ativa"}{p.is_new ? " · Nova" : ""}
                             </span>
                           </td>
                           <td className="px-5 py-4 text-right">
                             <div className="flex items-center justify-end gap-2">
+                              <button onClick={() => moverPlataforma(index, -1)} disabled={index === 0} aria-label={`Subir ${p.nome}`} className="rounded-lg border border-zinc-700 p-1.5 text-zinc-300 disabled:opacity-30"><FiArrowUp className="h-3 w-3" /></button>
+                              <button onClick={() => moverPlataforma(index, 1)} disabled={index === plataformas.length - 1} aria-label={`Descer ${p.nome}`} className="rounded-lg border border-zinc-700 p-1.5 text-zinc-300 disabled:opacity-30"><FiArrowDown className="h-3 w-3" /></button>
+                              <button onClick={() => atualizarStatusPlataforma(p)} className="rounded-lg border border-blue-400/20 bg-blue-400/5 p-1.5 text-blue-400" aria-label={`${p.ativo === false ? "Ativar" : "Desativar"} ${p.nome}`}><FiEye className="h-3 w-3" /></button>
                               <button
                                 onClick={() => editarPlataforma(p)}
                                 className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-400 bg-amber-400/5 hover:bg-amber-400/15 border border-amber-400/20 px-2 py-1.5 rounded-lg transition-all cursor-pointer"
@@ -1066,6 +1275,9 @@ export default function AdminPage() {
                         setImagemUrl("");
                         setCorBackground("#1c1c1e");
                         setBetsString("");
+                        setAtivoSinal(true);
+                        setDestaqueSinal(false);
+                        setGameIdSinal("");
                       }}
                       className="text-xs font-bold text-red-400 hover:text-red-350 uppercase transition-colors cursor-pointer"
                     >
@@ -1088,6 +1300,15 @@ export default function AdminPage() {
                   </div>
 
                   <div>
+                    <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-500">Associação técnica com public.games</label>
+                    <select value={gameIdSinal} onChange={(event) => setGameIdSinal(event.target.value)} className="w-full h-11 rounded-xl bg-zinc-950/80 border border-zinc-800 px-4 text-sm text-white focus:border-emerald-500/50 focus:outline-none">
+                      <option value="">Sem associação</option>
+                      {games.filter((game) => game.provider_normalized === normalizeAdminProvider(categoriaJogo)).map((game) => <option key={game.id} value={game.id}>{game.name} · #{game.external_id}</option>)}
+                    </select>
+                    <p className="mt-1 text-[10px] text-zinc-600">Somente jogos do mesmo provider são exibidos.</p>
+                  </div>
+
+                  <div>
                     <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-505">
                       Categoria do Jogo
                     </label>
@@ -1100,6 +1321,11 @@ export default function AdminPage() {
                       <option value="PP">PP Games</option>
                       <option value="WG">WG Games</option>
                     </select>
+                  </div>
+
+                  <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+                    <ToggleField label="Sinal ativo" checked={ativoSinal} onChange={setAtivoSinal} />
+                    <ToggleField label="Destacar nas maiores distribuições" checked={destaqueSinal} onChange={setDestaqueSinal} />
                   </div>
 
                   {renderUploader(
@@ -1156,7 +1382,8 @@ export default function AdminPage() {
 
               {/* Table Col */}
               <div className="xl:col-span-2 bg-zinc-900/30 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-6 flex flex-col space-y-4 overflow-hidden">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <h3 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
                     <FiPlayCircle className="text-emerald-400" /> Lista de Sinais ({sinaisFiltrados.length})
                   </h3>
@@ -1174,6 +1401,12 @@ export default function AdminPage() {
                       className="w-full h-10 pl-10 pr-4 rounded-xl bg-zinc-950/80 border border-zinc-800 text-xs text-white placeholder-zinc-650 focus:border-emerald-500/50 focus:outline-none transition-all"
                     />
                   </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    <select value={providerFiltro} onChange={(event) => { setProviderFiltro(event.target.value); setSinaisVisiveis(30); }} className="h-10 rounded-xl border border-zinc-800 bg-zinc-950 px-3 text-xs text-white"><option>Todos</option><option value="PG">PG</option><option value="PP">PP</option><option value="TADA">TADA</option><option value="WG">WG</option></select>
+                    <select value={ativoFiltro} onChange={(event) => { setAtivoFiltro(event.target.value); setSinaisVisiveis(30); }} className="h-10 rounded-xl border border-zinc-800 bg-zinc-950 px-3 text-xs text-white"><option>Todos</option><option>Ativos</option><option>Inativos</option></select>
+                    <select value={imagemFiltro} onChange={(event) => { setImagemFiltro(event.target.value); setSinaisVisiveis(30); }} className="h-10 rounded-xl border border-zinc-800 bg-zinc-950 px-3 text-xs text-white"><option>Todas</option><option>Pendentes</option><option>Válidas</option></select>
+                  </div>
                 </div>
 
                 <div className="overflow-x-auto max-h-[600px] border border-zinc-800/60 rounded-xl scrollbar-thin">
@@ -1188,23 +1421,24 @@ export default function AdminPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-900/80">
-                      {sinaisExibidos.map((s) => (
+                      {sinaisExibidos.map((s) => {
+                        const imageInfo = getSignalImageInfo(s, games);
+                        return (
                         <tr key={s.id} className="hover:bg-zinc-900/30 transition-all duration-150">
                           <td className="px-5 py-4">
                             <img
-                              src={
-                                s.imagem_url.startsWith("http") || s.imagem_url.startsWith("/")
-                                  ? s.imagem_url
-                                  : `https://reidoslotsinais.bet/images/games/${s.imagem_url}.webp`
-                              }
+                              src={imageInfo.src}
                               alt={s.nome_jogo}
                               onError={(e) => {
-                                e.currentTarget.src = "/placeholder.webp";
+                                if (e.currentTarget.dataset.fallbackApplied === "true") return;
+                                e.currentTarget.dataset.fallbackApplied = "true";
+                                e.currentTarget.src = GAME_IMAGE_PLACEHOLDER;
                               }}
                               className="w-10 h-10 rounded-xl object-cover bg-black border border-zinc-850"
                             />
+                            <span className={`mt-1 inline-flex text-[8px] font-black uppercase ${imageInfo.placeholder ? "text-amber-400" : "text-emerald-400"}`}><FiImage className="mr-1" />{imageInfo.placeholder ? "Placeholder" : "Válida"}</span>
                           </td>
-                          <td className="px-5 py-4 font-bold text-sm text-white">{s.nome_jogo}</td>
+                          <td className="px-5 py-4 font-bold text-sm text-white"><div className="flex items-center gap-1">{s.nome_jogo}{s.destaque && <FiStar className="text-amber-400" />}</div><p className="mt-1 text-[9px] font-normal text-zinc-500">{imageInfo.game ? `games #${imageInfo.game.id} · ${imageInfo.game.name}` : "Sem associação em public.games"}</p><button onClick={() => atualizarStatusSinal(s)} className={`mt-1 text-[9px] font-black uppercase ${s.ativo === false ? "text-zinc-500" : "text-emerald-400"}`}>{s.ativo === false ? "Inativo · ativar" : "Ativo · desativar"}</button></td>
                           <td className="px-5 py-4">
                             <span className={`inline-flex px-2.5 py-0.5 text-[9px] font-black uppercase rounded-full border ${
                               s.categoria_jogo === "PG" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
@@ -1251,7 +1485,7 @@ export default function AdminPage() {
                             </div>
                           </td>
                         </tr>
-                      ))}
+                      );})}
                       {sinaisFiltrados.length === 0 && (
                         <tr>
                           <td colSpan={5} className="px-5 py-8 text-center text-xs text-zinc-500">
@@ -1305,6 +1539,24 @@ export default function AdminPage() {
                       className="w-full h-12 pl-11 pr-4 rounded-xl bg-zinc-950/80 border border-zinc-800 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400">Mensagem padrão do WhatsApp</label>
+                  <textarea value={whatsappMensagem} onChange={(event) => setWhatsappMensagem(event.target.value)} placeholder="Mensagem preenchida ao abrir a conversa" className="h-20 w-full resize-none rounded-xl border border-zinc-800 bg-zinc-950/80 px-4 py-3 text-sm text-white focus:border-emerald-500/50 focus:outline-none" />
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div><label className="block mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400">Texto do botão do header</label><input value={headerBotaoTexto} onChange={(event) => setHeaderBotaoTexto(event.target.value)} className="h-11 w-full rounded-xl border border-zinc-800 bg-zinc-950/80 px-4 text-sm text-white focus:border-emerald-500/50 focus:outline-none" /></div>
+                  <div><label className="block mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400">Texto do botão do CTA</label><input value={ctaBotaoTexto} onChange={(event) => setCtaBotaoTexto(event.target.value)} className="h-11 w-full rounded-xl border border-zinc-800 bg-zinc-950/80 px-4 text-sm text-white focus:border-emerald-500/50 focus:outline-none" /></div>
+                </div>
+
+                <div><label className="block mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400">Título do CTA inferior</label><input value={ctaTitulo} onChange={(event) => setCtaTitulo(event.target.value)} className="h-11 w-full rounded-xl border border-zinc-800 bg-zinc-950/80 px-4 text-sm text-white focus:border-emerald-500/50 focus:outline-none" /></div>
+                <div><label className="block mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400">Descrição do CTA inferior</label><textarea value={ctaDescricao} onChange={(event) => setCtaDescricao(event.target.value)} className="h-20 w-full resize-none rounded-xl border border-zinc-800 bg-zinc-950/80 px-4 py-3 text-sm text-white focus:border-emerald-500/50 focus:outline-none" /></div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <ToggleField label="Exibir botão no header" checked={headerAtivo} onChange={setHeaderAtivo} />
+                  <ToggleField label="Exibir CTA inferior" checked={ctaAtivo} onChange={setCtaAtivo} />
                 </div>
 
                 {/* Instagram */}
@@ -1420,7 +1672,7 @@ export default function AdminPage() {
                     </div>
                     <div>
                       <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-400">
-                        Cor Secundária
+                        Cor de destaque
                       </label>
                       <div className="flex gap-2">
                         <input
@@ -1437,6 +1689,19 @@ export default function AdminPage() {
                         />
                       </div>
                     </div>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    {[
+                      ["Cor dos botões", corBotoes, setCorBotoes],
+                      ["Fundo", corFundo, setCorFundo],
+                      ["Cards", corCards, setCorCards],
+                    ].map(([label, value, setter]) => (
+                      <div key={label as string}>
+                        <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-400">{label as string}</label>
+                        <div className="flex gap-2"><input type="color" value={value as string} onChange={(event) => (setter as (value: string) => void)(event.target.value)} className="h-11 w-11 rounded-xl border border-zinc-800 bg-zinc-950 p-1" /><input value={value as string} onChange={(event) => (setter as (value: string) => void)(event.target.value)} className="min-w-0 flex-1 rounded-xl border border-zinc-800 bg-zinc-950 px-2 text-xs text-white" /></div>
+                      </div>
+                    ))}
                   </div>
 
                   {renderUploader(
@@ -1509,6 +1774,10 @@ export default function AdminPage() {
                     "banner",
                     "aspect-[16/9]"
                   )}
+
+                  <div><label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-400">Link do banner</label><input value={bannerLink} onChange={(event) => setBannerLink(event.target.value)} placeholder="https://..." className="h-11 w-full rounded-xl border border-zinc-800 bg-zinc-950/80 px-4 text-sm text-white focus:border-emerald-500/50 focus:outline-none" /></div>
+                  <ToggleField label="Exibir banner principal" checked={bannerAtivo} onChange={setBannerAtivo} />
+                  <div><label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-400">Texto do rodapé</label><textarea value={textoRodape} onChange={(event) => setTextoRodape(event.target.value)} className="h-20 w-full resize-none rounded-xl border border-zinc-800 bg-zinc-950/80 px-4 py-3 text-sm text-white focus:border-emerald-500/50 focus:outline-none" /></div>
                 </div>
               </div>
 
@@ -1522,6 +1791,24 @@ export default function AdminPage() {
                   Salvar Alterações de Aparência
                 </button>
               </div>
+            </div>
+          )}
+
+          {activeTab === "sections" && (
+            <div className="mx-auto max-w-3xl space-y-6 animate-fade-in">
+              <div className="flex items-center gap-3 border-b border-zinc-900 pb-4"><div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-2.5 text-emerald-400"><FiGrid className="h-5 w-5" /></div><div><h3 className="text-md font-bold uppercase tracking-wider text-white">Seções do site</h3><p className="text-xs text-zinc-500">Controle visibilidade e ordem da página pública V2.</p></div></div>
+              <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/30">
+                {siteSections.map((section, index) => (
+                  <div key={section.id} className="flex items-center gap-4 border-b border-zinc-800/80 px-5 py-4 last:border-0">
+                    <span className="w-7 text-center text-xs font-black text-zinc-600">{index + 1}</span>
+                    <span className="flex-1 text-sm font-bold text-white">{section.label}</span>
+                    <label className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-400"><input type="checkbox" checked={section.ativo} onChange={(event) => atualizarSecao(section.id, { ativo: event.target.checked })} className="h-4 w-4 accent-emerald-500" /> Ativa</label>
+                    <button type="button" aria-label={`Mover ${section.label} para cima`} disabled={index === 0} onClick={() => moverSecao(index, -1)} className="rounded-lg border border-zinc-800 p-2 text-zinc-300 disabled:opacity-30"><FiArrowUp /></button>
+                    <button type="button" aria-label={`Mover ${section.label} para baixo`} disabled={index === siteSections.length - 1} onClick={() => moverSecao(index, 1)} className="rounded-lg border border-zinc-800 p-2 text-zinc-300 disabled:opacity-30"><FiArrowDown /></button>
+                  </div>
+                ))}
+              </div>
+              <button onClick={salvar} className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-500 text-xs font-black uppercase tracking-wider text-black"><FiCheck className="h-5 w-5" />Salvar seções</button>
             </div>
           )}
 

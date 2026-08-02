@@ -1,6 +1,6 @@
 export type EstadoJogo = "Frio" | "Neutro" | "Aquecendo" | "Quente";
 export type TendenciaJogo = "Subindo" | "Estável" | "Caindo";
-export type CategoriaJogo = "PG Games" | "PP Games" | "WG Games";
+export type CategoriaJogo = "PG Games" | "PP Games" | "TADA Games" | "WG Games";
 
 export type Jogo = {
   id: number | string;
@@ -19,6 +19,7 @@ export type Jogo = {
   estado?: EstadoJogo;
   tendencia?: TendenciaJogo;
   volatilidade?: number;
+  destaque?: boolean;
   plataforma?: Plataforma;
 };
 
@@ -29,6 +30,7 @@ export type Plataforma = {
   imagem: string;
   ordem?: number;
   ativo?: boolean;
+  is_new?: boolean;
   nova?: boolean;
   selo?: string;
 };
@@ -38,6 +40,7 @@ export type ConfigSite = {
   instagram?: string;
   telegram?: string;
   popup_link?: string;
+  config_v2?: Record<string, unknown> | null;
 };
 
 export type Aparencia = {
@@ -50,22 +53,38 @@ export type Aparencia = {
   subtitulo_home?: string;
   texto_cta?: string;
   banner_principal_url?: string;
+  config_v2?: Record<string, unknown> | null;
 };
 
 export type SinalRow = {
   id: number | string;
   nome_jogo: string;
-  categoria_jogo: "PG" | "PP" | "WG";
+  categoria_jogo: "PG" | "PP" | "TADA" | "WG";
   cor_background?: string;
   bets?: string[];
   imagem_url?: string;
+  ativo?: boolean;
+  destaque?: boolean;
+  game_id?: number | null;
 };
 
 export type GameMediaRow = {
+  id?: number;
+  external_id?: string;
+  name?: string;
   provider_normalized: string;
   name_normalized: string;
   storage_image_url?: string | null;
   storage_icon_url?: string | null;
+};
+
+export type SiteSectionId = "banner" | "plataformas" | "distribuicoes" | "busca" | "catalogo" | "cta_whatsapp" | "footer";
+
+export type SiteSectionConfig = {
+  id: SiteSectionId;
+  label: string;
+  ativo: boolean;
+  ordem: number;
 };
 
 export type SugestoesAposta = {

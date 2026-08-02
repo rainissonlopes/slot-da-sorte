@@ -65,7 +65,7 @@ export function RecommendedPlatforms({ plataformas }: { plataformas: Plataforma[
             key={platform.id}
             className={`platform-card-cell${!showAllPlatforms && index >= MOBILE_PLATFORM_LIMIT ? " hidden min-[900px]:block" : ""}`}
           >
-            <PlatformCard platform={platform} isNew />
+            <PlatformCard platform={platform} isNew={platform.is_new ?? platform.nova ?? false} />
           </div>
         ))}
       </div>

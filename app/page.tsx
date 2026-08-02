@@ -20,6 +20,7 @@ import {
   getVisibleCatalogItems,
   MOBILE_CATALOG_BATCH,
 } from "@/lib/signals/catalog-pagination";
+import { resolveAppearanceV2, resolveSiteV2 } from "@/lib/signals/config-v2";
 import { supabase } from "@/lib/supabase";
 import type {
   Aparencia,
@@ -29,6 +30,7 @@ import type {
   Jogo,
   Plataforma,
   SinalRow,
+  SiteSectionId,
   SugestoesAposta,
   TendenciaJogo,
 } from "@/lib/signals/types";
@@ -186,6 +188,21 @@ function normalizeExternalLink(value?: string) {
   if (/^https?:\/\//i.test(trimmed)) return trimmed;
   const phone = trimmed.replace(/\D/g, "");
   return phone.length >= 10 ? `https://wa.me/${phone}` : undefined;
+}
+
+function normalizeWhatsAppLink(value?: string, message?: string) {
+  const link = normalizeExternalLink(value);
+  if (!link || !message) return link;
+  try {
+    const url = new URL(link);
+    if (url.hostname === "wa.me" || url.hostname.endsWith(".wa.me")) {
+      url.searchParams.set("text", message);
+      return url.toString();
+    }
+  } catch {
+    return link;
+  }
+  return link;
 }
 
 function normalizeGameName(value: string) {
@@ -358,7 +375,7 @@ export default function Home() {
           .returns<SinalRow[]>(),
         supabase
           .from("games")
-          .select("provider_normalized,name_normalized,storage_image_url,storage_icon_url")
+          .select("id,external_id,name,provider_normalized,name_normalized,storage_image_url,storage_icon_url")
           .eq("source", "rei-dos-slots")
           .abortSignal(controller.signal)
           .returns<GameMediaRow[]>(),
@@ -377,15 +394,26 @@ export default function Home() {
           },
         ]),
       );
+      const mediaById = new Map(
+        (gameMediaData || []).map((game) => [
+          Number(game.id),
+          {
+            cover: game.storage_image_url || undefined,
+            icon: game.storage_icon_url || undefined,
+          },
+        ]),
+      );
       const currentTimestamp = cacheValido ? cacheTimestamp : Date.now();
 
       const jogosFormatados: Jogo[] = (sinaisData || [])
+        .filter((sinal) => sinal.ativo !== false)
         .map((sinal, index) => {
           const cachedGame = cacheValido
             ? cacheJogos.find((game) => String(game.id) === String(sinal.id))
             : null;
           const plataforma = plataformas.length ? plataformas[index % plataformas.length] : undefined;
-          const media = mediaByIdentity.get(`${normalizeGameProvider(sinal.categoria_jogo)}:${normalizeGameName(sinal.nome_jogo)}`);
+          const media = (sinal.game_id ? mediaById.get(Number(sinal.game_id)) : undefined)
+            || mediaByIdentity.get(`${normalizeGameProvider(sinal.categoria_jogo)}:${normalizeGameName(sinal.nome_jogo)}`);
           let baseGame: Jogo = {
             id: sinal.id,
             nome: sinal.nome_jogo,
@@ -401,6 +429,7 @@ export default function Home() {
             imagemUrl: sinal.imagem_url,
             storageImageUrl: media?.cover,
             storageIconUrl: media?.icon,
+            destaque: sinal.destaque === true,
           };
 
           if (cachedGame) {
@@ -503,6 +532,8 @@ export default function Home() {
   const jogosEmAlta = useMemo(() => {
     const prioridadeEstado: Record<EstadoJogo, number> = { Quente: 4, Aquecendo: 3, Neutro: 2, Frio: 1 };
     return [...jogos].sort((a, b) => {
+      const destaque = Number(b.destaque === true) - Number(a.destaque === true);
+      if (destaque !== 0) return destaque;
       const estado = prioridadeEstado[b.estado || "Neutro"] - prioridadeEstado[a.estado || "Neutro"];
       if (estado !== 0) return estado;
       if (b.dist !== a.dist) return b.dist - a.dist;
@@ -512,15 +543,45 @@ export default function Home() {
 
   const primary = aparencia?.cor_primaria || "#16A34A";
   const secondary = aparencia?.cor_secundaria || "#22C55E";
+  const appearanceConfig = resolveAppearanceV2(aparencia);
+  const siteConfig = resolveSiteV2(configSite);
+  const action = appearanceConfig.buttonColor;
+  const whatsappLink = normalizeWhatsAppLink(siteConfig.whatsappNumber, siteConfig.whatsappMessage);
+  const siteSections = siteConfig.sections.filter((section) => section.ativo);
   const tenantStyles = {
     "--tenant-primary": primary,
     "--tenant-secondary": secondary,
-    "--tenant-background": "#050806",
-    "--tenant-surface": "#101512",
+    "--tenant-background": appearanceConfig.backgroundColor,
+    "--tenant-surface": appearanceConfig.cardColor,
     "--tenant-text": "#f7faf8",
     "--tenant-muted": "#9ba8a0",
     "--tenant-primary-rgb": hexToRgb(primary),
+    "--tenant-action": action,
+    "--tenant-action-hover": `color-mix(in srgb, ${action} 84%, white)`,
+    "--tenant-action-active": `color-mix(in srgb, ${action} 82%, black)`,
+    "--tenant-action-text": "#ffffff",
   } as React.CSSProperties;
+
+  const renderSiteSection = (id: SiteSectionId) => {
+    switch (id) {
+      case "banner":
+        return <PromotionalBanner desktopImageUrl={appearanceConfig.bannerUrl || "/banners/whatsapp-v2.webp"} fallbackImageUrl="/banners/whatsapp-v2.webp" href={normalizeExternalLink(appearanceConfig.bannerLink) || whatsappLink || normalizeExternalLink(configSite?.popup_link)} target="_blank" active={appearanceConfig.bannerActive} alt={`Campanha ${aparencia?.nome_site || "da plataforma"}`} />;
+      case "plataformas":
+        return <RecommendedPlatforms plataformas={plataformas} />;
+      case "distribuicoes":
+        return <div id="jogos-em-alta"><TrendingGames jogos={jogosEmAlta} /></div>;
+      case "busca":
+        return <GameFilters busca={busca} onBusca={handleBusca} categorias={categorias} categoriaAtiva={categoriaAtiva} onCategoria={handleCategoria} />;
+      case "catalogo":
+        return <section id="todos-os-jogos" aria-label="Todos os jogos"><SectionHeading icon={<LayoutGrid aria-hidden="true" />} eyebrow="Catálogo completo" title="Todos os jogos" description={`Atualizado às ${ultimaAtualizacao} · próximo ciclo em ${proximaAtualizacao}s`} /><GamesGrid jogos={jogosVisiveis} favoritos={favoritos} onFavorito={toggleFavorito} calcularSugestoes={calcularSugestoes} emptyText={jogos.length === 0 ? "Carregamento concluído, mas nenhum jogo está disponível no momento." : "Nenhum jogo corresponde à busca ou ao filtro selecionado."} />{filtrados.length > 0 && <div className="mt-7 flex flex-col items-center gap-3" aria-live="polite"><p className="text-xs font-semibold text-[var(--tenant-muted)]">Exibindo {visibleCatalogCount} de {filtrados.length} jogos</p>{hasMoreCatalogGames ? <button type="button" aria-label={`Carregar mais ${Math.min(catalogBatchSize, filtrados.length - visibleCatalogCount)} jogos`} onClick={() => setVisibleCatalogLimit((current) => getNextCatalogLimit(current, catalogBatchSize, filtrados.length))} className="signal-button w-full max-w-xs px-6 py-3 sm:w-auto sm:min-w-56">Carregar mais jogos</button> : <p className="text-xs font-semibold text-white/55">Todos os jogos foram exibidos</p>}</div>}</section>;
+      case "cta_whatsapp":
+        return !siteConfig.ctaActive ? null : <WhatsAppBanner whatsapp={whatsappLink} title={siteConfig.ctaTitle} description={siteConfig.ctaDescription} buttonText={siteConfig.ctaButtonText} />;
+      case "footer":
+        return <SiteFooter aparencia={aparencia} config={configSite ? { ...configSite, whatsapp: whatsappLink } : { whatsapp: whatsappLink }} footerText={appearanceConfig.footerText} />;
+      default:
+        return null;
+    }
+  };
 
   if (!montado) {
     return <main className="grid min-h-screen place-items-center bg-[#020806] text-white"><div className="text-center"><img src={aparencia?.logo_url || "/logo.webp"} alt="" className="mx-auto h-20 w-20 animate-pulse object-contain" /><h1 className="mt-5 text-xl font-black">Carregando sinais...</h1><p className="mt-2 text-sm text-white/55">Preparando os melhores jogos do momento</p></div></main>;
@@ -553,50 +614,12 @@ export default function Home() {
   return (
     <main className="signals-page min-h-screen overflow-x-hidden" style={tenantStyles}>
       <div className="fixed-bg" />
-      <SiteHeader aparencia={aparencia} whatsapp={configSite?.whatsapp} />
-      <div className="mx-auto max-w-7xl space-y-14 px-4 py-6 sm:space-y-20 sm:px-6 sm:py-10">
-        <PromotionalBanner
-          desktopImageUrl="/banners/whatsapp-v2.webp"
-          fallbackImageUrl={aparencia?.banner_principal_url}
-          href={normalizeExternalLink(configSite?.whatsapp) || normalizeExternalLink(configSite?.popup_link)}
-          target="_blank"
-          active
-          alt={`Campanha ${aparencia?.nome_site || "da plataforma"}`}
-        />
-        <RecommendedPlatforms plataformas={plataformas} />
-        <div id="jogos-em-alta"><TrendingGames jogos={jogosEmAlta} /></div>
-        <GameFilters busca={busca} onBusca={handleBusca} categorias={categorias} categoriaAtiva={categoriaAtiva} onCategoria={handleCategoria} />
-        <section id="todos-os-jogos" aria-label="Todos os jogos">
-          <SectionHeading
-            icon={<LayoutGrid aria-hidden="true" />}
-            eyebrow="Catálogo completo"
-            title="Todos os jogos"
-            description={`Atualizado às ${ultimaAtualizacao} · próximo ciclo em ${proximaAtualizacao}s`}
-          />
-          <GamesGrid jogos={jogosVisiveis} favoritos={favoritos} onFavorito={toggleFavorito} calcularSugestoes={calcularSugestoes} emptyText={jogos.length === 0 ? "Carregamento concluído, mas nenhum jogo está disponível no momento." : "Nenhum jogo corresponde à busca ou ao filtro selecionado."} />
-          {filtrados.length > 0 && (
-            <div className="mt-7 flex flex-col items-center gap-3" aria-live="polite">
-              <p className="text-xs font-semibold text-[var(--tenant-muted)]">
-                Exibindo {visibleCatalogCount} de {filtrados.length} jogos
-              </p>
-              {hasMoreCatalogGames ? (
-                <button
-                  type="button"
-                  aria-label={`Carregar mais ${Math.min(catalogBatchSize, filtrados.length - visibleCatalogCount)} jogos`}
-                  onClick={() => setVisibleCatalogLimit((current) => getNextCatalogLimit(current, catalogBatchSize, filtrados.length))}
-                  className="signal-button w-full max-w-xs px-6 py-3 sm:w-auto sm:min-w-56"
-                >
-                  Carregar mais jogos
-                </button>
-              ) : (
-                <p className="text-xs font-semibold text-white/55">Todos os jogos foram exibidos</p>
-              )}
-            </div>
-          )}
-        </section>
-        <WhatsAppBanner whatsapp={configSite?.whatsapp} />
+      <SiteHeader aparencia={aparencia} whatsapp={whatsappLink} buttonText={siteConfig.headerButtonText} active={siteConfig.headerActive} />
+      <div className="space-y-14 py-6 sm:space-y-20 sm:py-10">
+        {siteSections.map((section) => section.id === "footer"
+          ? <div key={section.id}>{renderSiteSection(section.id)}</div>
+          : <div key={section.id} className="mx-auto max-w-7xl px-4 sm:px-6">{renderSiteSection(section.id)}</div>)}
       </div>
-      <SiteFooter aparencia={aparencia} config={configSite} />
 
       {mostrarPopup && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-[100] grid place-items-center bg-black/80 p-4 backdrop-blur-md" role="dialog" aria-modal="true" aria-label="Oferta de plataforma">
@@ -608,7 +631,7 @@ export default function Home() {
             <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm"><input type="checkbox" onChange={(event) => event.target.checked ? localStorage.setItem("popup-plataforma", "true") : localStorage.removeItem("popup-plataforma")} /> Não mostrar novamente</label>
             <div className="mt-3 flex gap-2">
               <a href={configSite?.popup_link || "#"} target="_blank" rel="noopener noreferrer" className="signal-button flex-1 py-3">{aparencia?.texto_cta || "Acessar plataforma"}</a>
-              {configSite?.whatsapp && <a href={configSite.whatsapp} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="signal-action-icon grid h-12 w-12 place-items-center rounded-xl"><FaWhatsapp size={20} /></a>}
+              {whatsappLink && <a href={whatsappLink} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="signal-action-icon grid h-12 w-12 place-items-center rounded-xl"><FaWhatsapp size={20} /></a>}
             </div>
           </div>
         </motion.div>
