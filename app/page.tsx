@@ -14,6 +14,7 @@ import { SiteHeader } from "@/components/signals/SiteHeader";
 import { TrendingGames } from "@/components/signals/TrendingGames";
 import { WhatsAppBanner } from "@/components/signals/WhatsAppBanner";
 import {
+  formatCountdown,
   getCatalogBatchSize,
   getNextCatalogLimit,
   getVisibleCatalogCount,
@@ -429,6 +430,7 @@ export default function Home() {
             plataforma,
             bets: sinal.bets || [],
             imagemUrl: sinal.imagem_url,
+            imagemPersonalizada: sinal.imagem_personalizada === true,
             storageImageUrl: media?.cover,
             storageIconUrl: media?.icon,
             themeColor: media?.themeColor,
@@ -576,7 +578,7 @@ export default function Home() {
       case "busca":
         return <GameFilters busca={busca} onBusca={handleBusca} categorias={categorias} categoriaAtiva={categoriaAtiva} onCategoria={handleCategoria} />;
       case "catalogo":
-        return <section id="todos-os-jogos" aria-label="Todos os jogos"><SectionHeading icon={<LayoutGrid aria-hidden="true" />} eyebrow="Catálogo completo" title="Todos os jogos" description={`Atualizado às ${ultimaAtualizacao} · próximo ciclo em ${proximaAtualizacao}s`} /><GamesGrid jogos={jogosVisiveis} favoritos={favoritos} onFavorito={toggleFavorito} calcularSugestoes={calcularSugestoes} emptyText={jogos.length === 0 ? "Carregamento concluído, mas nenhum jogo está disponível no momento." : "Nenhum jogo corresponde à busca ou ao filtro selecionado."} />{filtrados.length > 0 && <div className="mt-7 flex flex-col items-center gap-3" aria-live="polite"><p className="text-xs font-semibold text-[var(--tenant-muted)]">Exibindo {visibleCatalogCount} de {filtrados.length} jogos</p>{hasMoreCatalogGames ? <button type="button" aria-label={`Carregar mais ${Math.min(catalogBatchSize, filtrados.length - visibleCatalogCount)} jogos`} onClick={() => setVisibleCatalogLimit((current) => getNextCatalogLimit(current, catalogBatchSize, filtrados.length))} className="signal-button w-full max-w-xs px-6 py-3 sm:w-auto sm:min-w-56">Carregar mais jogos</button> : <p className="text-xs font-semibold text-white/55">Todos os jogos foram exibidos</p>}</div>}</section>;
+        return <section id="todos-os-jogos" aria-label="Todos os jogos"><SectionHeading icon={<LayoutGrid aria-hidden="true" />} eyebrow="Catálogo completo" title="Todos os jogos" action={<p className="w-full max-w-full rounded-lg border border-emerald-500/25 bg-zinc-950/70 px-3 py-2 text-center text-[11px] font-semibold leading-4 text-white shadow-sm sm:w-auto sm:max-w-md sm:text-right" aria-live="polite">Atualizado às <span className="font-bold tabular-nums text-emerald-300">{ultimaAtualizacao}</span> · próximo ciclo em <span className="font-bold tabular-nums text-emerald-300">{formatCountdown(proximaAtualizacao)}</span></p>} /><GamesGrid jogos={jogosVisiveis} favoritos={favoritos} onFavorito={toggleFavorito} calcularSugestoes={calcularSugestoes} emptyText={jogos.length === 0 ? "Carregamento concluído, mas nenhum jogo está disponível no momento." : "Nenhum jogo corresponde à busca ou ao filtro selecionado."} />{filtrados.length > 0 && <div className="mt-7 flex flex-col items-center gap-3" aria-live="polite"><p className="text-xs font-semibold text-[var(--tenant-muted)]">Exibindo {visibleCatalogCount} de {filtrados.length} jogos</p>{hasMoreCatalogGames ? <button type="button" aria-label={`Carregar mais ${Math.min(catalogBatchSize, filtrados.length - visibleCatalogCount)} jogos`} onClick={() => setVisibleCatalogLimit((current) => getNextCatalogLimit(current, catalogBatchSize, filtrados.length))} className="signal-button w-full max-w-xs px-6 py-3 sm:w-auto sm:min-w-56">Carregar mais jogos</button> : <p className="text-xs font-semibold text-white/55">Todos os jogos foram exibidos</p>}</div>}</section>;
       case "cta_whatsapp":
         return !siteConfig.ctaActive ? null : <WhatsAppBanner whatsapp={whatsappLink} title={siteConfig.ctaTitle} description={siteConfig.ctaDescription} buttonText={siteConfig.ctaButtonText} />;
       case "footer":

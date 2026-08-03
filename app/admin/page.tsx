@@ -26,7 +26,7 @@ import {
   FiImage,
   FiStar
 } from "react-icons/fi";
-import { applyGameImageFallback, buildGameImageCandidates, GAME_IMAGE_PLACEHOLDER, resolveGameImage } from "@/lib/signals/resolve-game-image";
+import { applyGameImageFallback, buildGameImageCandidates, GAME_IMAGE_PLACEHOLDER, resolveGameImage, resolveGameImageSource } from "@/lib/signals/resolve-game-image";
 import { HeaderSocialLinks } from "@/components/signals/SocialNavigation";
 import { getGameThemeStyle, normalizeGameThemeColor, normalizeLegacySignalColor, resolveGameThemeColor } from "@/lib/signals/game-theme";
 import { DEFAULT_SITE_SECTIONS } from "@/lib/signals/site-sections";
@@ -68,6 +68,7 @@ function getSignalImageInfo(signal: SinalRow, games: GameMediaRow[]) {
     storageImageUrl: game?.storage_image_url,
     storageIconUrl: game?.storage_icon_url,
     rawImageUrl: signal.imagem_url,
+    manualImageOverride: signal.imagem_personalizada === true,
   });
   return { src, game, placeholder: src === GAME_IMAGE_PLACEHOLDER };
 }
@@ -145,6 +146,7 @@ export default function AdminPage() {
   const [gameIdSinal, setGameIdSinal] = useState("");
   const [themeColorSinal, setThemeColorSinal] = useState("");
   const [cardColorSaveError, setCardColorSaveError] = useState("");
+  const [imagemPersonalizadaSinal, setImagemPersonalizadaSinal] = useState(false);
 
   const [buscaSinal, setBuscaSinal] = useState("");
   const [sinaisVisiveis, setSinaisVisiveis] = useState(30);
@@ -177,14 +179,22 @@ export default function AdminPage() {
       ? "Usando cor original"
       : "Usando cor padrão";
   const previewGame = games.find((game) => String(game.id) === gameIdSinal);
-  const previewImageCandidates = buildGameImageCandidates({
+  const previewImageInput = {
     gameId: sinalEditando?.id || "preview",
     category: categoriaJogo,
     storageImageUrl: previewGame?.storage_image_url,
     storageIconUrl: previewGame?.storage_icon_url,
     rawImageUrl: imagemUrl,
-  });
+    manualImageOverride: imagemPersonalizadaSinal,
+  };
+  const previewImageCandidates = buildGameImageCandidates(previewImageInput);
   const previewCardImage = previewImageCandidates[0] || GAME_IMAGE_PLACEHOLDER;
+  const previewImageSource = resolveGameImageSource(previewImageInput);
+  const previewImageOrigin = previewImageSource === "manual"
+    ? "Imagem personalizada"
+    : previewImageSource === "placeholder"
+      ? "Placeholder"
+      : "Imagem do catálogo";
   const previewBetValues = betsString.split(",").map((value) => value.trim()).filter(Boolean);
   const previewBonus = previewBetValues[0] || "0.50";
   const previewConnection = previewBetValues[1] || previewBonus;
@@ -637,6 +647,7 @@ export default function AdminPage() {
       nome_jogo: nomeJogo,
       categoria_jogo: categoriaJogo,
       imagem_url: imagemUrl,
+      imagem_personalizada: imagemPersonalizadaSinal,
       cor_background: corBackground || "#1c1c1e",
       bets: betsArray,
       ativo: ativoSinal,
@@ -678,6 +689,7 @@ export default function AdminPage() {
     setNomeJogo("");
     setCategoriaJogo("PG");
     setImagemUrl("");
+    setImagemPersonalizadaSinal(false);
     setCorBackground("#1c1c1e");
     setBetsString("");
     setAtivoSinal(true);
@@ -696,6 +708,7 @@ export default function AdminPage() {
     setNomeJogo(s.nome_jogo || "");
     setCategoriaJogo(s.categoria_jogo || "PG");
     setImagemUrl(s.imagem_url || "");
+    setImagemPersonalizadaSinal(s.imagem_personalizada === true);
     setCorBackground(s.cor_background || "#1c1c1e");
     setBetsString(s.bets ? s.bets.join(", ") : "");
     setAtivoSinal(s.ativo !== false);
@@ -1340,6 +1353,7 @@ export default function AdminPage() {
                         setNomeJogo("");
                         setCategoriaJogo("PG");
                         setImagemUrl("");
+                        setImagemPersonalizadaSinal(false);
                         setCorBackground("#1c1c1e");
                         setBetsString("");
                         setAtivoSinal(true);
@@ -1443,7 +1457,12 @@ export default function AdminPage() {
                       </div>
 
                       <div>
-                        <p className="mb-2 text-[9px] font-black uppercase tracking-[.14em] text-zinc-500">Preview do card</p>
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                          <p className="text-[9px] font-black uppercase tracking-[.14em] text-zinc-500">Preview do card</p>
+                          <span className={`rounded-full border px-2 py-1 text-[8px] font-black uppercase ${previewImageSource === "manual" ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : previewImageSource === "placeholder" ? "border-amber-500/30 bg-amber-500/10 text-amber-300" : "border-sky-500/30 bg-sky-500/10 text-sky-300"}`}>
+                            {previewImageOrigin}
+                          </span>
+                        </div>
                         <article className="signal-card mx-auto w-full max-w-[320px]" data-themed="true" style={getGameThemeStyle(effectiveCardColor)}>
                           <div className="flex flex-col p-2.5 sm:p-3">
                             <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-white/10 bg-white/5">
@@ -1504,13 +1523,31 @@ export default function AdminPage() {
                   </div>
 
                   {renderUploader(
-                    "Imagem do Jogo",
+                    "Imagem personalizada",
                     "jogos",
                     imagemUrl,
-                    setImagemUrl,
+                    (url) => {
+                      setImagemUrl(url);
+                      setImagemPersonalizadaSinal(Boolean(url));
+                    },
                     "sinal",
                     "aspect-[4/3]"
                   )}
+
+                  <div className="flex items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-3">
+                    <div>
+                      <p className="text-[10px] font-black uppercase text-zinc-300">{previewImageOrigin}</p>
+                      <p className="mt-1 text-[10px] text-zinc-600">Imagem efetivamente usada pela V2.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setImagemPersonalizadaSinal(false)}
+                      disabled={!imagemPersonalizadaSinal}
+                      className="text-right text-[10px] font-black uppercase text-emerald-400 disabled:text-zinc-700"
+                    >
+                      Usar imagem padrão do catálogo
+                    </button>
+                  </div>
 
                   <div>
                     <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-505">

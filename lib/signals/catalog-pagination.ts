@@ -2,6 +2,16 @@ export const MOBILE_CATALOG_BATCH = 12;
 export const TABLET_CATALOG_BATCH = 18;
 export const DESKTOP_CATALOG_BATCH = 24;
 
+export function formatCountdown(seconds: unknown) {
+  const safeSeconds = typeof seconds === "number" && Number.isFinite(seconds)
+    ? Math.max(0, Math.floor(seconds))
+    : 0;
+  const minutes = Math.floor(safeSeconds / 60);
+  const remainingSeconds = safeSeconds % 60;
+
+  return `${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
+}
+
 export function getCatalogBatchSize(viewportWidth: number) {
   if (viewportWidth >= 1024) return DESKTOP_CATALOG_BATCH;
   if (viewportWidth >= 640) return TABLET_CATALOG_BATCH;

@@ -20,6 +20,7 @@ export function GameCard({ jogo, favorito, onFavorito, calcularSugestoes }: {
     storageImageUrl: jogo.storageImageUrl,
     storageIconUrl: jogo.storageIconUrl,
     rawImageUrl: jogo.imagemUrl,
+    manualImageOverride: jogo.imagemPersonalizada === true,
     gameId: jogo.id,
     category: jogo.cat,
   });

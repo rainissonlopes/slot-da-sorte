@@ -5,9 +5,12 @@ export type ResolveGameImageInput = {
   storageIconUrl?: string | null;
   rawImageUrl?: string | null;
   legacyImageUrl?: string | null;
+  manualImageOverride?: boolean;
   gameId: string | number;
   category?: string | null;
 };
+
+export type ResolvedGameImageSource = "manual" | "catalog-cover" | "catalog-icon" | "legacy" | "placeholder";
 
 function isValidAbsoluteUrl(value: string) {
   try {
@@ -39,15 +42,17 @@ export function buildGameImageCandidates({
   storageIconUrl,
   rawImageUrl,
   legacyImageUrl,
+  manualImageOverride,
 }: ResolveGameImageInput): string[] {
   const cover = storageImageUrl?.trim() || "";
   const icon = storageIconUrl?.trim() || "";
   const raw = rawImageUrl?.trim() || "";
   const legacy = legacyImageUrl?.trim() || "";
   return [...new Set([
+    manualImageOverride && isSafeImageSource(raw) ? raw : "",
     isGameStorageUrl(cover) ? cover : "",
     isGameStorageUrl(icon) ? icon : "",
-    isSafeImageSource(raw) ? raw : "",
+    !manualImageOverride && isSafeImageSource(raw) ? raw : "",
     isSafeImageSource(legacy) ? legacy : "",
     GAME_IMAGE_PLACEHOLDER,
   ].filter(Boolean))];
@@ -55,6 +60,16 @@ export function buildGameImageCandidates({
 
 export function resolveGameImage(input: ResolveGameImageInput): string {
   return buildGameImageCandidates(input)[0] ?? GAME_IMAGE_PLACEHOLDER;
+}
+
+export function resolveGameImageSource(input: ResolveGameImageInput): ResolvedGameImageSource {
+  const resolved = resolveGameImage(input);
+  const raw = input.rawImageUrl?.trim() || "";
+  if (input.manualImageOverride && isSafeImageSource(raw) && resolved === raw) return "manual";
+  if (input.storageImageUrl?.trim() === resolved && isGameStorageUrl(resolved)) return "catalog-cover";
+  if (input.storageIconUrl?.trim() === resolved && isGameStorageUrl(resolved)) return "catalog-icon";
+  if (resolved !== GAME_IMAGE_PLACEHOLDER) return "legacy";
+  return "placeholder";
 }
 
 export function applyGameImageFallback(image: HTMLImageElement, candidates: string[] = [GAME_IMAGE_PLACEHOLDER]) {

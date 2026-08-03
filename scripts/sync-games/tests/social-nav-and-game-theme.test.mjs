@@ -78,7 +78,23 @@ test("admin trata theme_color como override explícito e preserva a cor original
   assert.match(admin, /previewCardImage/);
   assert.match(admin, /game-bet-suggestions/);
   assert.match(admin, /game-access-button/);
+  assert.match(admin, /Imagem personalizada/);
+  assert.match(admin, /Usar imagem padrão do catálogo/);
+  assert.match(admin, /imagem_personalizada: imagemPersonalizadaSinal/);
+  assert.match(admin, /setImagemPersonalizadaSinal\(Boolean\(url\)\)/);
   assert.doesNotMatch(admin, /alert\("A cor temática deve usar o formato #RRGGBB\."\)/);
+});
+
+test("V2 propaga o override explícito de imagem ao resolvedor central", async () => {
+  const [home, gameCard, trendingGames] = await Promise.all([
+    readFile(new URL("../../../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../../../components/signals/GameCard.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../../../components/signals/TrendingGames.tsx", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(home, /imagemPersonalizada: sinal\.imagem_personalizada === true/);
+  assert.match(gameCard, /manualImageOverride: jogo\.imagemPersonalizada === true/);
+  assert.match(trendingGames, /manualImageOverride: jogo\.imagemPersonalizada === true/);
 });
 
 test("mantém Home e usa redes legadas configuradas quando social_nav ainda não existe", () => {

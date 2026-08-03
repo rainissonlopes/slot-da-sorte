@@ -36,6 +36,7 @@ export function TrendingGames({ jogos }: { jogos: Jogo[] }) {
             storageImageUrl: jogo.storageImageUrl,
             storageIconUrl: jogo.storageIconUrl,
             rawImageUrl: jogo.imagemUrl,
+            manualImageOverride: jogo.imagemPersonalizada === true,
             gameId: jogo.id,
             category: jogo.cat,
           });

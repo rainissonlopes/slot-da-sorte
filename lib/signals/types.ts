@@ -14,6 +14,7 @@ export type Jogo = {
   link: string;
   bets: string[];
   imagemUrl?: string;
+  imagemPersonalizada?: boolean;
   storageImageUrl?: string;
   storageIconUrl?: string;
   estado?: EstadoJogo;
@@ -64,6 +65,7 @@ export type SinalRow = {
   cor_background?: string;
   bets?: string[];
   imagem_url?: string;
+  imagem_personalizada?: boolean;
   ativo?: boolean;
   destaque?: boolean;
   game_id?: number | null;
