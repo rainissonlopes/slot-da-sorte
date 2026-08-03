@@ -442,6 +442,36 @@ input {
   }
 }
 
+@media (max-width: 767px) {
+  .mobile-catalog-content {
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .mobile-bottom-nav {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1000;
+    width: 100%;
+    margin: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    border-top: 1px solid rgb(255 255 255 / 0.08);
+    background: #07100c;
+    box-shadow: 0 -10px 30px rgb(0 0 0 / 0.38);
+  }
+
+  .mobile-bottom-nav__items {
+    min-height: 64px;
+  }
+}
+
+@media (min-width: 768px) {
+  .mobile-bottom-nav {
+    display: none;
+  }
+}
+
 @media (max-width: 379px) {
   .header-social-tiktok {
     display: none;
