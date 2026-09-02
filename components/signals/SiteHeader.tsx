@@ -5,11 +5,11 @@ import type { Aparencia, SocialNavItemConfig } from "@/lib/signals/types";
 
 export function SiteHeader({ aparencia, whatsapp, buttonText = "WhatsApp", active = true, socialItems }: { aparencia: Aparencia | null; whatsapp?: string; buttonText?: string; active?: boolean; socialItems: SocialNavItemConfig[] }) {
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-black/75 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:h-20 sm:px-6">
-        <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3" aria-label="Ir para o início">
-          <img src={aparencia?.logo_url || "/logo.webp"} alt="" className="h-10 w-10 shrink-0 object-contain sm:h-12 sm:w-12" />
-          <span className="hidden truncate text-base font-black uppercase tracking-tight min-[480px]:block sm:text-xl">
+    <header className="site-header">
+      <div className="site-header__inner mx-auto max-w-7xl">
+        <Link href="/" className="site-brand" aria-label="Ir para o início">
+          <img src={aparencia?.logo_url || "/logo.webp"} alt="" width={96} height={72} className="site-brand__logo" />
+          <span className="site-brand__name">
             {aparencia?.nome_site || "Slot da Sorte"}
           </span>
         </Link>

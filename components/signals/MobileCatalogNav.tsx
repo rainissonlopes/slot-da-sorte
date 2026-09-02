@@ -1,20 +1,24 @@
+import Image from "next/image";
 import { Heart, LayoutGrid } from "lucide-react";
 
 const mobileCatalogItems = [
   { value: "Todos", label: "Todos" },
-  { value: "PG Games", label: "PG" },
-  { value: "PP Games", label: "PP" },
-  { value: "WG Games", label: "WG" },
+  { value: "PG Games", label: "PG", logoSrc: "/providers/pg-soft-icon.webp" },
+  { value: "PP Games", label: "PP", logoSrc: "/providers/pragmatic-icon.webp" },
+  { value: "WG Games", label: "WG", logoSrc: "/providers/wg-icon.webp" },
   { value: "Favoritos", label: "Favoritos" },
 ] as const;
 
-function ProviderMark({ label }: { label: "PG" | "PP" | "WG" }) {
+function ProviderLogo({ label, src }: { label: string; src: string }) {
   return (
-    <span
-      aria-hidden="true"
-      className="grid h-5 min-w-5 place-items-center rounded-[0.3rem] border border-current px-0.5 text-[8px] font-black leading-none tracking-[-0.03em]"
-    >
-      {label}
+    <span className="mobile-provider-logo" aria-hidden="true">
+      <Image
+        src={src}
+        alt=""
+        width={34}
+        height={28}
+        className={`mobile-provider-logo__image mobile-provider-logo__image--${label.toLowerCase()}`}
+      />
     </span>
   );
 }
@@ -41,18 +45,20 @@ export function MobileCatalogNav({
               aria-label={`Filtrar catálogo por ${item.label}`}
               aria-pressed={active}
               onClick={() => onCategoria(item.value)}
-              className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-0.5 text-[10px] font-extrabold leading-none whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[#55d984] ${
+              className={`mobile-catalog-nav-item flex min-w-0 flex-col items-center justify-center gap-1 px-0.5 text-[10px] font-extrabold leading-none whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[var(--tenant-primary)] ${
                 active
-                  ? "bg-[#00A63E] text-white"
-                  : "text-zinc-400 hover:bg-white/5 hover:text-white active:bg-white/10"
+                  ? ""
+                  : "text-zinc-300 hover:bg-white/5 hover:text-white active:bg-white/10"
               }`}
             >
               {item.value === "Todos" ? (
                 <LayoutGrid aria-hidden="true" size={19} strokeWidth={2.4} />
               ) : item.value === "Favoritos" ? (
                 <Heart aria-hidden="true" size={19} strokeWidth={2.4} fill={active ? "currentColor" : "none"} />
+              ) : "logoSrc" in item ? (
+                <ProviderLogo label={item.label} src={item.logoSrc} />
               ) : (
-                <ProviderMark label={item.label as "PG" | "PP" | "WG"} />
+                null
               )}
               <span className="max-w-full truncate">{item.label}</span>
             </button>

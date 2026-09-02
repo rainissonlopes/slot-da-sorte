@@ -638,7 +638,7 @@ export default function Home() {
     <main className="signals-page min-h-screen overflow-x-hidden" style={tenantStyles}>
       <div className="fixed-bg" />
       <SiteHeader aparencia={aparencia} whatsapp={whatsappLink} buttonText={siteConfig.headerButtonText} active={siteConfig.headerActive} socialItems={siteConfig.socialNav} />
-      <div className="mobile-catalog-content space-y-14 py-6 sm:space-y-20 sm:py-10">
+      <div className="mobile-catalog-content space-y-12 py-4 sm:space-y-20 sm:py-10">
         {siteSections.map((section) => section.id === "footer"
           ? <div key={section.id}>{renderSiteSection(section.id)}</div>
           : <div key={section.id} className="mx-auto max-w-7xl px-4 sm:px-6">{renderSiteSection(section.id)}</div>)}

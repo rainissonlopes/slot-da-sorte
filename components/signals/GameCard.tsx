@@ -1,5 +1,6 @@
 import { ArrowUpRight, Flame, Heart, Minus, Snowflake, TrendingDown, TrendingUp } from "lucide-react";
 import { applyGameImageFallback, buildGameImageCandidates } from "@/lib/signals/resolve-game-image";
+import { getSignalIndicatorPresentation, type SignalIndicatorIcon } from "@/lib/signals/get-signal-indicator-presentation";
 import { getSignalMetricBarClass } from "@/lib/signals/get-signal-metric-bar-class";
 import { getGameThemeStyle, resolveGameThemeColor } from "@/lib/signals/game-theme";
 import type { Jogo, SugestoesAposta } from "@/lib/signals/types";
@@ -10,12 +11,24 @@ const barInfo = [
   ["Máxima", "max"],
 ] as const;
 
+const indicatorIcons = {
+  flame: Flame,
+  snowflake: Snowflake,
+  minus: Minus,
+  "trending-up": TrendingUp,
+  "trending-down": TrendingDown,
+} satisfies Record<SignalIndicatorIcon, typeof Flame>;
+
 export function GameCard({ jogo, favorito, onFavorito, calcularSugestoes }: {
   jogo: Jogo; favorito: boolean; onFavorito: (id: string) => void; calcularSugestoes: (bets: string[]) => SugestoesAposta;
 }) {
   const sugestoes = calcularSugestoes(jogo.bets);
-  const StateIcon = jogo.estado === "Quente" ? Flame : jogo.estado === "Frio" ? Snowflake : Minus;
-  const TrendIcon = jogo.tendencia === "Subindo" ? TrendingUp : jogo.tendencia === "Caindo" ? TrendingDown : Minus;
+  const estado = jogo.estado || "Neutro";
+  const tendencia = jogo.tendencia || "Estável";
+  const statePresentation = getSignalIndicatorPresentation(estado);
+  const trendPresentation = getSignalIndicatorPresentation(tendencia);
+  const StateIcon = indicatorIcons[statePresentation.icon];
+  const TrendIcon = indicatorIcons[trendPresentation.icon];
   const imageCandidates = buildGameImageCandidates({
     storageImageUrl: jogo.storageImageUrl,
     storageIconUrl: jogo.storageIconUrl,
@@ -52,11 +65,11 @@ export function GameCard({ jogo, favorito, onFavorito, calcularSugestoes }: {
           </div>
         </div>
         <div className="mt-2.5 grid grid-cols-2 gap-1 text-[9px] font-bold sm:text-[10px]">
-          <span className="status-pill"><StateIcon size={14} />{jogo.estado || "Neutro"}</span>
-          <span className="status-pill"><TrendIcon size={14} />{jogo.tendencia || "Estável"}</span>
+          <span className="status-pill" data-tone={statePresentation.tone}><StateIcon aria-hidden="true" />{estado}</span>
+          <span className="status-pill" data-tone={trendPresentation.tone}><TrendIcon aria-hidden="true" />{tendencia}</span>
         </div>
-        <div className="mt-3 space-y-2">
-          {barInfo.map(([label, key]) => <div key={key}><div className="mb-1 flex justify-between gap-1 text-[9px] font-bold text-white/70 sm:text-[10px]"><span className="truncate">{label}</span><span>{jogo[key]}%</span></div><div className="h-1.5 overflow-hidden rounded-full bg-white/8"><div className={`h-full rounded-full ${getSignalMetricBarClass(jogo[key])}`} style={{ width: `${jogo[key]}%` }} /></div></div>)}
+        <div className="mt-3 space-y-1.5">
+          {barInfo.map(([label, key]) => <div key={key}><div className="mb-0.5 flex justify-between gap-1 text-[9px] font-extrabold text-white/85 sm:text-[10px]"><span className="truncate">{label}</span><span className="shrink-0 tabular-nums text-white">{jogo[key]}%</span></div><div className="signal-metric-track"><div className={`signal-metric-fill ${getSignalMetricBarClass(jogo[key])}`} style={{ width: `${jogo[key]}%` }} /></div></div>)}
         </div>
         <div className="game-bet-suggestions mt-3 rounded-xl border border-white/8 bg-black/20 p-2">
           <p className="mb-1.5 truncate text-[8px] font-black uppercase tracking-[.12em] text-[var(--tenant-muted)] sm:text-[9px]">Sugestões de aposta</p>
