@@ -7,6 +7,7 @@ import { AlertCircle, LayoutGrid, RotateCcw, X } from "lucide-react";
 import { GameFilters } from "@/components/signals/GameFilters";
 import { GamesGrid } from "@/components/signals/GamesGrid";
 import { MobileCatalogNav } from "@/components/signals/MobileCatalogNav";
+import { MobileUpdateCountdown } from "@/components/signals/MobileUpdateCountdown";
 import { PromotionalBanner } from "@/components/signals/PromotionalBanner";
 import { RecommendedPlatforms } from "@/components/signals/RecommendedPlatforms";
 import { SectionHeading } from "@/components/signals/SectionHeading";
@@ -15,7 +16,6 @@ import { SiteHeader } from "@/components/signals/SiteHeader";
 import { TrendingGames } from "@/components/signals/TrendingGames";
 import { WhatsAppBanner } from "@/components/signals/WhatsAppBanner";
 import {
-  formatCountdown,
   getCatalogBatchSize,
   getNextCatalogLimit,
   getVisibleCatalogCount,
@@ -241,8 +241,8 @@ export default function Home() {
   const [categoriaAtiva, setCategoriaAtiva] = useState("Todos");
   const [montado, setMontado] = useState(false);
   const [erroSinais, setErroSinais] = useState<string | null>(null);
-  const [ultimaAtualizacao, setUltimaAtualizacao] = useState("");
   const [proximaAtualizacao, setProximaAtualizacao] = useState(CICLO_SEGUNDOS);
+  const [atualizandoSinais, setAtualizandoSinais] = useState(false);
   const [jogos, setJogos] = useState<Jogo[]>([]);
   const [catalogBatchSize, setCatalogBatchSize] = useState(MOBILE_CATALOG_BATCH);
   const [visibleCatalogLimit, setVisibleCatalogLimit] = useState(MOBILE_CATALOG_BATCH);
@@ -335,6 +335,7 @@ export default function Home() {
   };
 
   const carregarCards = useCallback(async (forcarAtualizacao = false) => {
+    if (forcarAtualizacao) setAtualizandoSinais(true);
     setErroSinais(null);
     let cacheDisponivel: Jogo[] = [];
     const controller = new AbortController();
@@ -473,7 +474,6 @@ export default function Home() {
         timestamp: currentTimestamp,
       }));
       setJogos(jogosFormatados);
-      setUltimaAtualizacao(horaAtualizacao);
       setProximaAtualizacao(cacheValido ? tempoRestante : CICLO_SEGUNDOS);
     } catch (error) {
       console.error("ERRO CARDS:", error);
@@ -485,6 +485,7 @@ export default function Home() {
       }
     } finally {
       window.clearTimeout(timeout);
+      if (forcarAtualizacao) setAtualizandoSinais(false);
       setMontado(true);
     }
   }, [plataformas]);
@@ -499,7 +500,7 @@ export default function Home() {
     const timer = window.setInterval(() => {
       setProximaAtualizacao((tempo) => {
         if (tempo <= 1) {
-          carregarCards(true);
+          void carregarCards(true);
           return CICLO_SEGUNDOS;
         }
         return tempo - 1;
@@ -596,7 +597,7 @@ export default function Home() {
       case "busca":
         return <GameFilters busca={busca} onBusca={handleBusca} categorias={categorias} categoriaAtiva={categoriaAtiva} onCategoria={handleCategoria} />;
       case "catalogo":
-        return <section id="todos-os-jogos" aria-label="Todos os jogos"><SectionHeading icon={<LayoutGrid aria-hidden="true" />} eyebrow="Catálogo completo" title="Todos os jogos" action={<p className="w-full max-w-full rounded-lg border border-emerald-500/25 bg-zinc-950/70 px-3 py-2 text-center text-[11px] font-semibold leading-4 text-white shadow-sm sm:w-auto sm:max-w-md sm:text-right" aria-live="polite">Atualizado às <span className="font-bold tabular-nums text-emerald-300">{ultimaAtualizacao}</span> · próximo ciclo em <span className="font-bold tabular-nums text-emerald-300">{formatCountdown(proximaAtualizacao)}</span></p>} /><GamesGrid jogos={jogosVisiveis} favoritos={favoritos} onFavorito={toggleFavorito} calcularSugestoes={calcularSugestoes} emptyText={jogos.length === 0 ? "Carregamento concluído, mas nenhum jogo está disponível no momento." : categoriaAtiva === "Favoritos" ? "Nenhum jogo favorito ainda." : "Nenhum jogo corresponde à busca ou ao filtro selecionado."} />{filtrados.length > 0 && <div className="mt-7 flex flex-col items-center gap-3" aria-live="polite"><p className="text-xs font-semibold text-[var(--tenant-muted)]">Exibindo {visibleCatalogCount} de {filtrados.length} jogos</p>{hasMoreCatalogGames ? <button type="button" aria-label={`Carregar mais ${Math.min(catalogBatchSize, filtrados.length - visibleCatalogCount)} jogos`} onClick={() => setVisibleCatalogLimit((current) => getNextCatalogLimit(current, catalogBatchSize, filtrados.length))} className="signal-button w-full max-w-xs px-6 py-3 sm:w-auto sm:min-w-56">Carregar mais jogos</button> : <p className="text-xs font-semibold text-white/55">Todos os jogos foram exibidos</p>}</div>}</section>;
+        return <section id="todos-os-jogos" aria-label="Todos os jogos"><SectionHeading icon={<LayoutGrid aria-hidden="true" />} eyebrow="Catálogo completo" title="Todos os jogos" /><GamesGrid jogos={jogosVisiveis} favoritos={favoritos} onFavorito={toggleFavorito} calcularSugestoes={calcularSugestoes} emptyText={jogos.length === 0 ? "Carregamento concluído, mas nenhum jogo está disponível no momento." : categoriaAtiva === "Favoritos" ? "Nenhum jogo favorito ainda." : "Nenhum jogo corresponde à busca ou ao filtro selecionado."} />{filtrados.length > 0 && <div className="mt-7 flex flex-col items-center gap-3" aria-live="polite"><p className="text-xs font-semibold text-[var(--tenant-muted)]">Exibindo {visibleCatalogCount} de {filtrados.length} jogos</p>{hasMoreCatalogGames ? <button type="button" aria-label={`Carregar mais ${Math.min(catalogBatchSize, filtrados.length - visibleCatalogCount)} jogos`} onClick={() => setVisibleCatalogLimit((current) => getNextCatalogLimit(current, catalogBatchSize, filtrados.length))} className="signal-button w-full max-w-xs px-6 py-3 sm:w-auto sm:min-w-56">Carregar mais jogos</button> : <p className="text-xs font-semibold text-white/55">Todos os jogos foram exibidos</p>}</div>}</section>;
       case "cta_whatsapp":
         return !siteConfig.ctaActive ? null : <WhatsAppBanner whatsapp={whatsappLink} title={siteConfig.ctaTitle} description={siteConfig.ctaDescription} buttonText={siteConfig.ctaButtonText} />;
       case "footer":
@@ -644,6 +645,7 @@ export default function Home() {
           : <div key={section.id} className="mx-auto max-w-7xl px-4 sm:px-6">{renderSiteSection(section.id)}</div>)}
       </div>
 
+      <MobileUpdateCountdown seconds={proximaAtualizacao} isUpdating={atualizandoSinais} />
       <MobileCatalogNav categoriaAtiva={categoriaAtiva} onCategoria={handleMobileCategoria} />
 
       {mostrarPopup && (

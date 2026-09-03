@@ -74,16 +74,28 @@ input {
 }
 
 .fixed-bg {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: -1;
-  background-color: var(--tenant-background, #050806);
+  min-height: 100%;
+  background-color: #050806;
   background-image:
-    radial-gradient(ellipse 88% 30% at 50% -4%, color-mix(in srgb, var(--tenant-primary) 8%, transparent), transparent 72%),
-    radial-gradient(ellipse 70% 24% at 88% 52%, rgb(38 55 46 / 0.1), transparent 74%),
-    repeating-linear-gradient(135deg, rgb(255 255 255 / 0.006) 0 1px, transparent 1px 48px),
-    repeating-linear-gradient(45deg, rgb(255 255 255 / 0.004) 0 1px, transparent 1px 48px),
-    linear-gradient(180deg, color-mix(in srgb, var(--tenant-background) 78%, #162019) 0%, color-mix(in srgb, var(--tenant-background) 88%, #0d120f) 46%, color-mix(in srgb, var(--tenant-background) 93%, #090d0b) 100%);
+    radial-gradient(ellipse 120% 10% at 50% 11%, color-mix(in srgb, var(--tenant-primary) 6%, transparent), transparent 82%),
+    radial-gradient(ellipse 95% 11% at 106% 34%, color-mix(in srgb, var(--tenant-primary) 4%, transparent), transparent 82%),
+    radial-gradient(ellipse 105% 12% at -8% 54%, color-mix(in srgb, var(--tenant-primary) 4%, transparent), transparent 84%),
+    radial-gradient(ellipse 90% 10% at 103% 73%, color-mix(in srgb, var(--tenant-primary) 3%, transparent), transparent 84%),
+    radial-gradient(ellipse 115% 9% at 35% 92%, color-mix(in srgb, var(--tenant-primary) 3%, transparent), transparent 86%),
+    repeating-linear-gradient(135deg, rgb(255 255 255 / 0.02) 0 1px, transparent 1px 72px),
+    repeating-linear-gradient(45deg, rgb(255 255 255 / 0.014) 0 1px, transparent 1px 72px),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--tenant-background, #050806) 82%, #070b08) 0%,
+      color-mix(in srgb, var(--tenant-background, #050806) 90%, #030604) 20%,
+      color-mix(in srgb, var(--tenant-background, #050806) 84%, #0a0f0c) 43%,
+      color-mix(in srgb, var(--tenant-background, #050806) 92%, #030604) 64%,
+      color-mix(in srgb, var(--tenant-background, #050806) 86%, #070b08) 82%,
+      color-mix(in srgb, var(--tenant-background, #050806) 92%, #030604) 100%
+    );
 }
 
 .signals-page {
@@ -184,11 +196,11 @@ input {
 
 .site-header__inner {
   display: grid;
-  min-height: 6.75rem;
+  min-height: 8.75rem;
   grid-template-rows: 2.25rem 1fr;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.5rem 1rem 0.625rem;
+  gap: 0;
+  padding: 0.25rem 1rem;
 }
 
 .site-brand {
@@ -201,8 +213,8 @@ input {
 
 .site-brand__logo {
   display: block;
-  width: 5rem;
-  height: 3.75rem;
+  width: 8rem;
+  height: 6rem;
   flex: none;
   object-fit: contain;
 }
@@ -583,7 +595,61 @@ input {
 
 @media (max-width: 767px) {
   .mobile-catalog-content {
-    padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(8.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .mobile-update-countdown {
+    position: fixed;
+    right: auto;
+    bottom: calc(4rem + env(safe-area-inset-bottom, 0px) + 17px);
+    left: 50%;
+    z-index: 90;
+    display: flex;
+    width: max-content;
+    min-width: 230px;
+    min-height: 42px;
+    max-width: calc(100vw - 2rem);
+    box-sizing: border-box;
+    transform: translateX(-50%);
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+    border: 1px solid color-mix(in srgb, var(--tenant-primary) 24%, transparent);
+    border-radius: 999px;
+    background: rgb(3 7 5 / 0.98);
+    box-shadow: 0 8px 26px rgb(0 0 0 / 0.62), 0 2px 8px rgb(0 0 0 / 0.48);
+    padding: 0.55rem 20px;
+    color: rgb(255 255 255 / 0.76);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+    pointer-events: none;
+    white-space: nowrap;
+    backdrop-filter: blur(10px);
+  }
+
+  .mobile-update-countdown__indicator {
+    width: 15px;
+    height: 15px;
+    flex: none;
+    border: 1.5px solid color-mix(in srgb, var(--tenant-primary) 28%, transparent);
+    border-top-color: var(--tenant-primary);
+    border-radius: 999px;
+    animation: mobile-update-spinner 0.8s linear infinite;
+  }
+
+  .mobile-update-countdown__value,
+  .mobile-update-countdown__updating {
+    color: var(--tenant-primary);
+  }
+
+  .mobile-update-countdown__value {
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .mobile-update-countdown__updating {
+    font-weight: 900;
   }
 
   .mobile-bottom-nav {
@@ -644,7 +710,17 @@ input {
   }
 }
 
+@keyframes mobile-update-spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (min-width: 768px) {
+  .mobile-update-countdown {
+    display: none;
+  }
+
   .mobile-bottom-nav {
     display: none;
   }
@@ -663,6 +739,10 @@ input {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .mobile-update-countdown__indicator {
+    animation: none;
+  }
+
   html {
     scroll-behavior: auto;
   }

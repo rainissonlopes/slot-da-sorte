@@ -20,11 +20,19 @@ test("formata o contador em MM:SS e protege valores invalidos", () => {
   assert.equal(formatCountdown(Number.POSITIVE_INFINITY), "00:00");
 });
 
-test("mantem o contador responsivo em 360px e alinhado a direita em 1366px", async () => {
+test("usa o ciclo real no contador flutuante mobile e remove a barra antiga", async () => {
   const home = await readFile(new URL("../../../app/page.tsx", import.meta.url), "utf8");
+  const countdown = await readFile(new URL("../../../components/signals/MobileUpdateCountdown.tsx", import.meta.url), "utf8");
+  const styles = await readFile(new URL("../../../app/globals.css", import.meta.url), "utf8");
 
-  assert.match(home, /w-full max-w-full[^"]*text-center[^"]*sm:w-auto[^"]*sm:max-w-md[^"]*sm:text-right/);
-  assert.match(home, /Atualizado às[\s\S]*formatCountdown\(proximaAtualizacao\)/);
+  assert.doesNotMatch(home, /Atualizado às/);
+  assert.match(home, /<MobileUpdateCountdown seconds=\{proximaAtualizacao\} isUpdating=\{atualizandoSinais\}/);
+  assert.match(home, /if \(forcarAtualizacao\) setAtualizandoSinais\(true\)/);
+  assert.match(home, /if \(forcarAtualizacao\) setAtualizandoSinais\(false\)/);
+  assert.match(countdown, /Próxima atualização:/);
+  assert.match(countdown, /Atualizando sinais\.\.\./);
+  assert.match(countdown, /formatCountdown\(seconds\)/);
+  assert.match(styles, /\.mobile-update-countdown \{[\s\S]*position: fixed;[\s\S]*env\(safe-area-inset-bottom, 0px\)/);
 });
 
 test("calcula lote por breakpoint", () => {
