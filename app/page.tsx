@@ -246,8 +246,12 @@ export default function Home() {
   const [jogos, setJogos] = useState<Jogo[]>([]);
   const [catalogBatchSize, setCatalogBatchSize] = useState(MOBILE_CATALOG_BATCH);
   const [visibleCatalogLimit, setVisibleCatalogLimit] = useState(MOBILE_CATALOG_BATCH);
+  const [isLoadingMoreCatalogGames, setIsLoadingMoreCatalogGames] = useState(false);
+  const [catalogAutoLoadFailed, setCatalogAutoLoadFailed] = useState(false);
   const carregadoRef = useRef(false);
   const catalogBatchRef = useRef(MOBILE_CATALOG_BATCH);
+  const catalogSentinelRef = useRef<HTMLDivElement>(null);
+  const catalogLoadInProgressRef = useRef(false);
   const categorias = ["Todos", "PG Games", "PP Games", "WG Games", "Favoritos"];
 
   useEffect(() => {
@@ -525,6 +529,43 @@ export default function Home() {
   );
   const visibleCatalogCount = getVisibleCatalogCount(visibleCatalogLimit, filtrados.length);
   const hasMoreCatalogGames = visibleCatalogCount < filtrados.length;
+  const intersectionObserverAvailable = typeof window !== "undefined" && "IntersectionObserver" in window;
+
+  const loadNextCatalogBatch = useCallback(() => {
+    if (catalogLoadInProgressRef.current || !hasMoreCatalogGames) return;
+
+    catalogLoadInProgressRef.current = true;
+    setIsLoadingMoreCatalogGames(true);
+    setVisibleCatalogLimit((current) => getNextCatalogLimit(current, catalogBatchSize, filtrados.length));
+  }, [catalogBatchSize, filtrados.length, hasMoreCatalogGames]);
+
+  useEffect(() => {
+    if (!catalogLoadInProgressRef.current) return;
+    catalogLoadInProgressRef.current = false;
+    setIsLoadingMoreCatalogGames(false);
+  }, [visibleCatalogLimit]);
+
+  useEffect(() => {
+    const sentinel = catalogSentinelRef.current;
+    if (!sentinel || !hasMoreCatalogGames || !intersectionObserverAvailable || catalogAutoLoadFailed) return;
+
+    try {
+      const observer = new IntersectionObserver((entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        loadNextCatalogBatch();
+      }, {
+        rootMargin: "0px 0px 500px 0px",
+        threshold: 0,
+      });
+
+      observer.observe(sentinel);
+      return () => observer.disconnect();
+    } catch (error) {
+      console.warn("[Catálogo] carregamento automático indisponível:", error);
+      const fallbackTimer = window.setTimeout(() => setCatalogAutoLoadFailed(true), 0);
+      return () => window.clearTimeout(fallbackTimer);
+    }
+  }, [catalogAutoLoadFailed, hasMoreCatalogGames, intersectionObserverAvailable, loadNextCatalogBatch]);
 
   const handleBusca = useCallback((value: string) => {
     setBusca(value);
@@ -597,7 +638,7 @@ export default function Home() {
       case "busca":
         return <GameFilters busca={busca} onBusca={handleBusca} categorias={categorias} categoriaAtiva={categoriaAtiva} onCategoria={handleCategoria} />;
       case "catalogo":
-        return <section id="todos-os-jogos" aria-label="Todos os jogos"><SectionHeading icon={<LayoutGrid aria-hidden="true" />} eyebrow="Catálogo completo" title="Todos os jogos" /><GamesGrid jogos={jogosVisiveis} favoritos={favoritos} onFavorito={toggleFavorito} calcularSugestoes={calcularSugestoes} emptyText={jogos.length === 0 ? "Carregamento concluído, mas nenhum jogo está disponível no momento." : categoriaAtiva === "Favoritos" ? "Nenhum jogo favorito ainda." : "Nenhum jogo corresponde à busca ou ao filtro selecionado."} />{filtrados.length > 0 && <div className="mt-7 flex flex-col items-center gap-3" aria-live="polite"><p className="text-xs font-semibold text-[var(--tenant-muted)]">Exibindo {visibleCatalogCount} de {filtrados.length} jogos</p>{hasMoreCatalogGames ? <button type="button" aria-label={`Carregar mais ${Math.min(catalogBatchSize, filtrados.length - visibleCatalogCount)} jogos`} onClick={() => setVisibleCatalogLimit((current) => getNextCatalogLimit(current, catalogBatchSize, filtrados.length))} className="signal-button w-full max-w-xs px-6 py-3 sm:w-auto sm:min-w-56">Carregar mais jogos</button> : <p className="text-xs font-semibold text-white/55">Todos os jogos foram exibidos</p>}</div>}</section>;
+        return <section id="todos-os-jogos" aria-label="Todos os jogos"><SectionHeading icon={<LayoutGrid aria-hidden="true" />} eyebrow="Catálogo completo" title="Todos os jogos" /><GamesGrid jogos={jogosVisiveis} favoritos={favoritos} onFavorito={toggleFavorito} calcularSugestoes={calcularSugestoes} emptyText={jogos.length === 0 ? "Carregamento concluído, mas nenhum jogo está disponível no momento." : categoriaAtiva === "Favoritos" ? "Nenhum jogo favorito ainda." : "Nenhum jogo corresponde à busca ou ao filtro selecionado."} />{filtrados.length > 0 && <div className="mt-7 flex flex-col items-center gap-3" aria-live="polite"><p className="text-xs font-semibold text-[var(--tenant-muted)]">Exibindo {visibleCatalogCount} de {filtrados.length} jogos</p>{hasMoreCatalogGames ? <><div ref={catalogSentinelRef} className="h-px w-full" aria-hidden="true" />{isLoadingMoreCatalogGames && <p className="flex items-center gap-2 text-xs font-semibold text-white/65"><span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/15 border-t-[var(--tenant-primary)] motion-reduce:animate-none" aria-hidden="true" />Carregando mais jogos...</p>}<button type="button" aria-label={`Carregar mais ${Math.min(catalogBatchSize, filtrados.length - visibleCatalogCount)} jogos`} onClick={loadNextCatalogBatch} className={intersectionObserverAvailable && !catalogAutoLoadFailed ? "hidden" : "signal-button w-full max-w-xs px-6 py-3 sm:w-auto sm:min-w-56"}>Carregar mais jogos</button></> : <p className="text-xs font-semibold text-white/55">Todos os jogos foram carregados.</p>}</div>}</section>;
       case "cta_whatsapp":
         return !siteConfig.ctaActive ? null : <WhatsAppBanner whatsapp={whatsappLink} title={siteConfig.ctaTitle} description={siteConfig.ctaDescription} buttonText={siteConfig.ctaButtonText} />;
       case "footer":

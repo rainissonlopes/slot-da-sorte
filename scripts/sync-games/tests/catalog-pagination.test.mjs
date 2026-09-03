@@ -57,3 +57,16 @@ test("retorna somente itens visíveis sem duplicar", () => {
   assert.deepEqual(getVisibleCatalogItems([1, 2, 3, 4], 2), [1, 2]);
   assert.deepEqual(getVisibleCatalogItems([], 12), []);
 });
+
+test("infinite scroll reutiliza a paginação e mantém fallback manual", async () => {
+  const home = await readFile(new URL("../../../app/page.tsx", import.meta.url), "utf8");
+
+  assert.match(home, /new IntersectionObserver/);
+  assert.match(home, /rootMargin: "0px 0px 500px 0px"/);
+  assert.match(home, /catalogLoadInProgressRef\.current \|\| !hasMoreCatalogGames/);
+  assert.match(home, /setVisibleCatalogLimit\(\(current\) => getNextCatalogLimit\(current, catalogBatchSize, filtrados\.length\)\)/);
+  assert.match(home, /ref=\{catalogSentinelRef\}/);
+  assert.match(home, /onClick=\{loadNextCatalogBatch\}/);
+  assert.match(home, /Carregando mais jogos\.\.\./);
+  assert.match(home, /Todos os jogos foram carregados\./);
+});
