@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { FaWhatsapp } from "react-icons/fa";
-import { AlertCircle, LayoutGrid, RotateCcw, X } from "lucide-react";
+import { AlertCircle, RotateCcw, X } from "lucide-react";
 import { GameFilters } from "@/components/signals/GameFilters";
 import { GamesGrid } from "@/components/signals/GamesGrid";
 import { MobileCatalogNav } from "@/components/signals/MobileCatalogNav";
@@ -638,7 +638,7 @@ export default function Home() {
       case "busca":
         return <GameFilters busca={busca} onBusca={handleBusca} categorias={categorias} categoriaAtiva={categoriaAtiva} onCategoria={handleCategoria} />;
       case "catalogo":
-        return <section id="todos-os-jogos" aria-label="Todos os jogos"><SectionHeading icon={<LayoutGrid aria-hidden="true" />} eyebrow="Catálogo completo" title="Todos os jogos" /><GamesGrid jogos={jogosVisiveis} favoritos={favoritos} onFavorito={toggleFavorito} calcularSugestoes={calcularSugestoes} emptyText={jogos.length === 0 ? "Carregamento concluído, mas nenhum jogo está disponível no momento." : categoriaAtiva === "Favoritos" ? "Nenhum jogo favorito ainda." : "Nenhum jogo corresponde à busca ou ao filtro selecionado."} />{filtrados.length > 0 && <div className="mt-7 flex flex-col items-center gap-3" aria-live="polite"><p className="text-xs font-semibold text-[var(--tenant-muted)]">Exibindo {visibleCatalogCount} de {filtrados.length} jogos</p>{hasMoreCatalogGames ? <><div ref={catalogSentinelRef} className="h-px w-full" aria-hidden="true" />{isLoadingMoreCatalogGames && <p className="flex items-center gap-2 text-xs font-semibold text-white/65"><span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/15 border-t-[var(--tenant-primary)] motion-reduce:animate-none" aria-hidden="true" />Carregando mais jogos...</p>}<button type="button" aria-label={`Carregar mais ${Math.min(catalogBatchSize, filtrados.length - visibleCatalogCount)} jogos`} onClick={loadNextCatalogBatch} className={intersectionObserverAvailable && !catalogAutoLoadFailed ? "hidden" : "signal-button w-full max-w-xs px-6 py-3 sm:w-auto sm:min-w-56"}>Carregar mais jogos</button></> : <p className="text-xs font-semibold text-white/55">Todos os jogos foram carregados.</p>}</div>}</section>;
+        return <section id="todos-os-jogos" aria-label="Todos os jogos"><SectionHeading title="TODOS OS JOGOS" accentTitle /><GamesGrid jogos={jogosVisiveis} favoritos={favoritos} onFavorito={toggleFavorito} calcularSugestoes={calcularSugestoes} emptyText={jogos.length === 0 ? "Carregamento concluído, mas nenhum jogo está disponível no momento." : categoriaAtiva === "Favoritos" ? "Nenhum jogo favorito ainda." : "Nenhum jogo corresponde à busca ou ao filtro selecionado."} />{filtrados.length > 0 && <div className="mt-7 flex flex-col items-center gap-3" aria-live="polite"><p className="text-xs font-semibold text-[var(--tenant-muted)]">Exibindo {visibleCatalogCount} de {filtrados.length} jogos</p>{hasMoreCatalogGames ? <><div ref={catalogSentinelRef} className="h-px w-full" aria-hidden="true" />{isLoadingMoreCatalogGames && <p className="flex items-center gap-2 text-xs font-semibold text-white/65"><span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/15 border-t-[var(--tenant-primary)] motion-reduce:animate-none" aria-hidden="true" />Carregando mais jogos...</p>}<button type="button" aria-label={`Carregar mais ${Math.min(catalogBatchSize, filtrados.length - visibleCatalogCount)} jogos`} onClick={loadNextCatalogBatch} className={intersectionObserverAvailable && !catalogAutoLoadFailed ? "hidden" : "signal-button w-full max-w-xs px-6 py-3 sm:w-auto sm:min-w-56"}>Carregar mais jogos</button></> : <p className="text-xs font-semibold text-white/55">Todos os jogos foram carregados.</p>}</div>}</section>;
       case "cta_whatsapp":
         return !siteConfig.ctaActive ? null : <WhatsAppBanner whatsapp={whatsappLink} title={siteConfig.ctaTitle} description={siteConfig.ctaDescription} buttonText={siteConfig.ctaButtonText} />;
       case "footer":
@@ -677,7 +677,7 @@ export default function Home() {
   }
 
   return (
-    <main className="signals-page min-h-screen overflow-x-hidden" style={tenantStyles}>
+    <main className="signals-page min-h-screen overflow-x-hidden pb-28 sm:pb-0" style={tenantStyles}>
       <div className="fixed-bg" />
       <SiteHeader aparencia={aparencia} whatsapp={whatsappLink} buttonText={siteConfig.headerButtonText} active={siteConfig.headerActive} socialItems={siteConfig.socialNav} />
       <div className="mobile-catalog-content space-y-12 py-4 sm:space-y-20 sm:py-10">

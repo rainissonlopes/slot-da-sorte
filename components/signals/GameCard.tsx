@@ -1,6 +1,5 @@
-import { ArrowUpRight, Flame, Heart, Minus, Snowflake, TrendingDown, TrendingUp } from "lucide-react";
+import { ArrowUpRight, Heart, Minus, TrendingDown, TrendingUp } from "lucide-react";
 import { applyGameImageFallback, buildGameImageCandidates } from "@/lib/signals/resolve-game-image";
-import { getSignalIndicatorPresentation, type SignalIndicatorIcon } from "@/lib/signals/get-signal-indicator-presentation";
 import { getSignalMetricBarClass } from "@/lib/signals/get-signal-metric-bar-class";
 import { getGameThemeStyle, resolveGameThemeColor } from "@/lib/signals/game-theme";
 import type { Jogo, SugestoesAposta } from "@/lib/signals/types";
@@ -11,24 +10,11 @@ const barInfo = [
   ["Máxima", "max"],
 ] as const;
 
-const indicatorIcons = {
-  flame: Flame,
-  snowflake: Snowflake,
-  minus: Minus,
-  "trending-up": TrendingUp,
-  "trending-down": TrendingDown,
-} satisfies Record<SignalIndicatorIcon, typeof Flame>;
-
 export function GameCard({ jogo, favorito, onFavorito, calcularSugestoes }: {
   jogo: Jogo; favorito: boolean; onFavorito: (id: string) => void; calcularSugestoes: (bets: string[]) => SugestoesAposta;
 }) {
   const sugestoes = calcularSugestoes(jogo.bets);
-  const estado = jogo.estado || "Neutro";
-  const tendencia = jogo.tendencia || "Estável";
-  const statePresentation = getSignalIndicatorPresentation(estado);
-  const trendPresentation = getSignalIndicatorPresentation(tendencia);
-  const StateIcon = indicatorIcons[statePresentation.icon];
-  const TrendIcon = indicatorIcons[trendPresentation.icon];
+  const TrendIcon = jogo.tendencia === "Subindo" ? TrendingUp : jogo.tendencia === "Caindo" ? TrendingDown : Minus;
   const imageCandidates = buildGameImageCandidates({
     storageImageUrl: jogo.storageImageUrl,
     storageIconUrl: jogo.storageIconUrl,
@@ -64,9 +50,8 @@ export function GameCard({ jogo, favorito, onFavorito, calcularSugestoes }: {
             <p className="mt-0.5 truncate text-[9px] font-bold uppercase tracking-wide text-[var(--tenant-muted)] sm:text-[10px]">{jogo.cat}</p>
           </div>
         </div>
-        <div className="mt-2.5 grid grid-cols-2 gap-1 text-[9px] font-bold sm:text-[10px]">
-          <span className="status-pill" data-tone={statePresentation.tone}><StateIcon aria-hidden="true" />{estado}</span>
-          <span className="status-pill" data-tone={trendPresentation.tone}><TrendIcon aria-hidden="true" />{tendencia}</span>
+        <div className="mt-2.5 flex text-[9px] font-bold sm:text-[10px]">
+          <span className="status-pill w-full" data-status={jogo.tendencia || "Estável"}><TrendIcon size={14} />{jogo.tendencia || "Estável"}</span>
         </div>
         <div className="mt-3 space-y-1.5">
           {barInfo.map(([label, key]) => <div key={key}><div className="mb-0.5 flex justify-between gap-1 text-[9px] font-extrabold text-white/85 sm:text-[10px]"><span className="truncate">{label}</span><span className="shrink-0 tabular-nums text-white">{jogo[key]}%</span></div><div className="signal-metric-track"><div className={`signal-metric-fill ${getSignalMetricBarClass(jogo[key])}`} style={{ width: `${jogo[key]}%` }} /></div></div>)}
@@ -77,7 +62,7 @@ export function GameCard({ jogo, favorito, onFavorito, calcularSugestoes }: {
           <div className="mt-1 grid grid-cols-2 gap-1 text-center text-[8px] sm:text-[9px]"><Bet label="Padrão" value={`${sugestoes.p1} / ${sugestoes.p2}`} /><Bet label="Máxima" value={`${sugestoes.m1} / ${sugestoes.m2}`} /></div>
         </div>
         {jogo.plataforma && <p className="mt-2 truncate text-[9px] text-[var(--tenant-muted)]">Em <strong className="text-white/80">{jogo.plataforma.nome}</strong></p>}
-        <a href={jogo.link} target="_blank" rel="noopener noreferrer" className="game-access-button signal-button mt-2.5 w-full px-1 py-2 text-[10px] sm:text-xs">Acessar <ArrowUpRight size={14} /></a>
+        <a href={jogo.link} target="_blank" rel="noopener noreferrer" className="game-access-button signal-button mt-2.5 w-full px-1 py-2 text-[10px] sm:text-xs">Jogar <ArrowUpRight size={14} /></a>
       </div>
     </article>
   );

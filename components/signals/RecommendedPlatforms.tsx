@@ -1,6 +1,5 @@
 "use client";
 
-import { Gamepad2 } from "lucide-react";
 import { useState } from "react";
 import { SectionHeading } from "@/components/signals/SectionHeading";
 import type { Plataforma } from "@/lib/signals/types";
@@ -51,9 +50,8 @@ export function RecommendedPlatforms({ plataformas }: { plataformas: Plataforma[
   return (
     <section aria-label="Plataformas indicadas">
       <SectionHeading
-        icon={<Gamepad2 aria-hidden="true" />}
-        eyebrow="Onde jogar"
-        title="Plataformas indicadas"
+        title="PLATAFORMAS INDICADAS"
+        accentTitle
         align="center"
       />
       <div

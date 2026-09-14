@@ -491,13 +491,42 @@ input {
 .status-pill {
   min-width: 0;
   overflow: hidden;
-  justify-content: flex-start;
-  gap: 0.18rem;
-  padding: 0.35rem 0.15rem;
-  border-color: color-mix(in srgb, var(--indicator-color) 38%, transparent);
-  background: color-mix(in srgb, var(--indicator-color) 13%, transparent);
-  color: var(--indicator-color);
+  padding: 0.3rem 0.35rem;
+  border-color: transparent;
+  color: white;
   white-space: nowrap;
+}
+
+.section-heading-accent h2 {
+  color: var(--tenant-action);
+  font-size: clamp(0.875rem, 4vw, 1.5rem);
+  letter-spacing: 0.015em;
+  white-space: nowrap;
+}
+
+.status-pill[data-status="Caindo"],
+.status-pill[data-status="Quente"] {
+  background: #b91c1c;
+}
+
+.status-pill[data-status="Estável"] {
+  background: #1d4ed8;
+}
+
+.status-pill[data-status="Subindo"] {
+  background: #15803d;
+}
+
+.status-pill[data-status="Aquecendo"] {
+  background: #b45309;
+}
+
+.status-pill[data-status="Frio"] {
+  background: #0369a1;
+}
+
+.status-pill[data-status="Neutro"] {
+  background: #52525b;
 }
 
 .status-pill svg {
@@ -628,16 +657,6 @@ input {
     backdrop-filter: blur(10px);
   }
 
-  .mobile-update-countdown__indicator {
-    width: 15px;
-    height: 15px;
-    flex: none;
-    border: 1.5px solid color-mix(in srgb, var(--tenant-primary) 28%, transparent);
-    border-top-color: var(--tenant-primary);
-    border-radius: 999px;
-    animation: mobile-update-spinner 0.8s linear infinite;
-  }
-
   .mobile-update-countdown__value,
   .mobile-update-countdown__updating {
     color: var(--tenant-primary);
@@ -710,12 +729,6 @@ input {
   }
 }
 
-@keyframes mobile-update-spinner {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @media (min-width: 768px) {
   .mobile-update-countdown {
     display: none;
@@ -724,6 +737,42 @@ input {
   .mobile-bottom-nav {
     display: none;
   }
+}
+
+@keyframes trendingConveyor {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.trending-marquee-track {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+  animation: trendingConveyor 34s linear infinite;
+}
+
+.trending-marquee-group {
+  display: flex;
+  flex: none;
+  gap: 0.625rem;
+  padding-right: 0.625rem;
+}
+
+.trending-marquee:hover .trending-marquee-track,
+.trending-marquee:focus-within .trending-marquee-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trending-marquee {
+    overflow-x: auto;
+  }
+
+  .trending-marquee-track {
+    animation: none;
+  }
+
 }
 
 @media (max-width: 379px) {
@@ -739,10 +788,6 @@ input {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mobile-update-countdown__indicator {
-    animation: none;
-  }
-
   html {
     scroll-behavior: auto;
   }
