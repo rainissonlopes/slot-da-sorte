@@ -25,7 +25,7 @@ export function PromotionalBanner({
       <img
         src={desktopImageUrl}
         alt={alt}
-        className="block h-auto w-full rounded-2xl object-contain"
+        className="block aspect-[40/13] w-full rounded-2xl object-cover object-center"
         onError={(event) => {
           const image = event.currentTarget;
           if (fallbackImageUrl && image.dataset.fallbackApplied !== "true") {

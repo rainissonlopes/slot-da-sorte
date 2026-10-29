@@ -189,9 +189,7 @@ input {
   position: sticky;
   top: 0;
   z-index: 50;
-  border-bottom: 1px solid rgb(255 255 255 / 0.1);
-  background: rgb(3 7 5 / 0.86);
-  backdrop-filter: blur(16px);
+  background: transparent;
 }
 
 .site-header__inner {
@@ -213,8 +211,8 @@ input {
 
 .site-brand__logo {
   display: block;
-  width: 8rem;
-  height: 6rem;
+  width: 12rem;
+  height: 9rem;
   flex: none;
   object-fit: contain;
 }
@@ -294,8 +292,8 @@ input {
   }
 
   .site-brand__logo {
-    width: 4rem;
-    height: 3.5rem;
+    width: 6rem;
+    height: 5.25rem;
   }
 
   .site-brand__name {

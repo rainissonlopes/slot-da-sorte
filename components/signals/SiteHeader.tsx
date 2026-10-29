@@ -9,9 +9,6 @@ export function SiteHeader({ aparencia, whatsapp, buttonText = "WhatsApp", activ
       <div className="site-header__inner mx-auto max-w-7xl">
         <Link href="/" className="site-brand" aria-label="Ir para o início">
           <img src={aparencia?.logo_url || "/logo.webp"} alt="" width={96} height={72} className="site-brand__logo" />
-          <span className="site-brand__name">
-            {aparencia?.nome_site || "Slot da Sorte"}
-          </span>
         </Link>
         <div className="header-actions">
           <HeaderSocialLinks items={socialItems} />
