@@ -2,19 +2,20 @@ import type { ReactNode } from "react";
 
 type SectionHeadingProps = {
   icon?: ReactNode;
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
   description?: string;
   action?: ReactNode;
   align?: "start" | "center";
+  accentTitle?: boolean;
 };
 
-export function SectionHeading({ title, description, action, align = "start" }: SectionHeadingProps) {
+export function SectionHeading({ title, description, action, align = "start", accentTitle = false }: SectionHeadingProps) {
   const isCentered = align === "center";
 
   return (
     <div
-      className="section-heading"
+      className={`section-heading${accentTitle ? " section-heading-accent" : ""}`}
       style={isCentered ? { alignItems: "center", justifyContent: "center", textAlign: "center" } : undefined}
     >
       <div className={isCentered ? "flex flex-col items-center" : undefined}>

@@ -14,7 +14,6 @@ export function MobileUpdateCountdown({
       aria-live="polite"
       aria-atomic="true"
     >
-      <span className="mobile-update-countdown__indicator" aria-hidden="true" />
       {isUpdating ? (
         <span className="mobile-update-countdown__updating">Atualizando sinais...</span>
       ) : (
