@@ -33,37 +33,12 @@ import type {
   Plataforma,
   SinalRow,
   SiteSectionId,
-  SugestoesAposta,
   TendenciaJogo,
 } from "@/lib/signals/types";
 
 const CACHE_KEY = "slotCards";
 const CICLO_SEGUNDOS = 300;
 const CICLO_MS = CICLO_SEGUNDOS * 1000;
-
-const calcularSugestoes = (bets: string[]): SugestoesAposta => {
-  if (!bets || bets.length < 10) {
-    return {
-      bonus: "2,00",
-      conexao: "0,50",
-      extra: "1,20",
-      p1: "10,00",
-      p2: "20,00",
-      m1: "50,00",
-      m2: "100,00",
-    };
-  }
-
-  return {
-    bonus: bets[4],
-    conexao: bets[1],
-    extra: bets[3],
-    p1: bets[8] || bets[0],
-    p2: bets[12] || bets[1],
-    m1: bets[bets.length - 3],
-    m2: bets[bets.length - 1],
-  };
-};
 
 const limitar = (valor: number, min: number, max: number) =>
   Math.min(max, Math.max(min, valor));
@@ -630,7 +605,7 @@ export default function Home() {
   const renderSiteSection = (id: SiteSectionId) => {
     switch (id) {
       case "banner":
-        return <PromotionalBanner desktopImageUrl={appearanceConfig.bannerUrl || "/banners/whatsapp-v2.webp"} fallbackImageUrl="/banners/whatsapp-v2.webp" href={normalizeExternalLink(appearanceConfig.bannerLink) || whatsappLink || normalizeExternalLink(configSite?.popup_link)} target="_blank" active={appearanceConfig.bannerActive} alt={`Campanha ${aparencia?.nome_site || "da plataforma"}`} />;
+        return <PromotionalBanner desktopImageUrl="/banners/banner-novo-wpp-v2.webp" fallbackImageUrl="/banners/banner-novo-wpp-v2.webp" href={normalizeExternalLink(appearanceConfig.bannerLink) || whatsappLink || normalizeExternalLink(configSite?.popup_link)} target="_blank" active={appearanceConfig.bannerActive} alt={`Campanha ${aparencia?.nome_site || "da plataforma"}`} />;
       case "plataformas":
         return <RecommendedPlatforms plataformas={plataformas} />;
       case "distribuicoes":
@@ -638,7 +613,7 @@ export default function Home() {
       case "busca":
         return <GameFilters busca={busca} onBusca={handleBusca} categorias={categorias} categoriaAtiva={categoriaAtiva} onCategoria={handleCategoria} />;
       case "catalogo":
-        return <section id="todos-os-jogos" aria-label="Todos os jogos"><SectionHeading title="TODOS OS JOGOS" accentTitle /><GamesGrid jogos={jogosVisiveis} favoritos={favoritos} onFavorito={toggleFavorito} calcularSugestoes={calcularSugestoes} emptyText={jogos.length === 0 ? "Carregamento concluído, mas nenhum jogo está disponível no momento." : categoriaAtiva === "Favoritos" ? "Nenhum jogo favorito ainda." : "Nenhum jogo corresponde à busca ou ao filtro selecionado."} />{filtrados.length > 0 && <div className="mt-7 flex flex-col items-center gap-3" aria-live="polite"><p className="text-xs font-semibold text-[var(--tenant-muted)]">Exibindo {visibleCatalogCount} de {filtrados.length} jogos</p>{hasMoreCatalogGames ? <><div ref={catalogSentinelRef} className="h-px w-full" aria-hidden="true" />{isLoadingMoreCatalogGames && <p className="flex items-center gap-2 text-xs font-semibold text-white/65"><span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/15 border-t-[var(--tenant-primary)] motion-reduce:animate-none" aria-hidden="true" />Carregando mais jogos...</p>}<button type="button" aria-label={`Carregar mais ${Math.min(catalogBatchSize, filtrados.length - visibleCatalogCount)} jogos`} onClick={loadNextCatalogBatch} className={intersectionObserverAvailable && !catalogAutoLoadFailed ? "hidden" : "signal-button w-full max-w-xs px-6 py-3 sm:w-auto sm:min-w-56"}>Carregar mais jogos</button></> : <p className="text-xs font-semibold text-white/55">Todos os jogos foram carregados.</p>}</div>}</section>;
+        return <section id="todos-os-jogos" aria-label="Todos os jogos"><GamesGrid jogos={jogosVisiveis} favoritos={favoritos} onFavorito={toggleFavorito} emptyText={jogos.length === 0 ? "Carregamento concluído, mas nenhum jogo está disponível no momento." : categoriaAtiva === "Favoritos" ? "Nenhum jogo favorito ainda." : "Nenhum jogo corresponde à busca ou ao filtro selecionado."} />{filtrados.length > 0 && <div className="mt-7 flex flex-col items-center gap-3" aria-live="polite"><p className="text-xs font-semibold text-[var(--tenant-muted)]">Exibindo {visibleCatalogCount} de {filtrados.length} jogos</p>{hasMoreCatalogGames ? <><div ref={catalogSentinelRef} className="h-px w-full" aria-hidden="true" />{isLoadingMoreCatalogGames && <p className="flex items-center gap-2 text-xs font-semibold text-white/65"><span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/15 border-t-[var(--tenant-primary)] motion-reduce:animate-none" aria-hidden="true" />Carregando mais jogos...</p>}<button type="button" aria-label={`Carregar mais ${Math.min(catalogBatchSize, filtrados.length - visibleCatalogCount)} jogos`} onClick={loadNextCatalogBatch} className={intersectionObserverAvailable && !catalogAutoLoadFailed ? "hidden" : "signal-button w-full max-w-xs px-6 py-3 sm:w-auto sm:min-w-56"}>Carregar mais jogos</button></> : <p className="text-xs font-semibold text-white/55">Todos os jogos foram carregados.</p>}</div>}</section>;
       case "cta_whatsapp":
         return !siteConfig.ctaActive ? null : <WhatsAppBanner whatsapp={whatsappLink} title={siteConfig.ctaTitle} description={siteConfig.ctaDescription} buttonText={siteConfig.ctaButtonText} />;
       case "footer":

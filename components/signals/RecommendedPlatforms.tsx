@@ -1,17 +1,13 @@
 "use client";
 
-import { useState } from "react";
 import { SectionHeading } from "@/components/signals/SectionHeading";
 import type { Plataforma } from "@/lib/signals/types";
 
-const MOBILE_PLATFORM_LIMIT = 12;
-
 type PlatformCardProps = {
   platform: Plataforma;
-  isNew?: boolean;
 };
 
-function PlatformCard({ platform, isNew = false }: PlatformCardProps) {
+function PlatformCard({ platform }: PlatformCardProps) {
   return (
     <a
       href={platform.link}
@@ -19,7 +15,7 @@ function PlatformCard({ platform, isNew = false }: PlatformCardProps) {
       rel="noopener noreferrer"
       title={platform.nome}
       aria-label={`Acessar ${platform.nome}`}
-      className="group relative block aspect-square w-full min-w-0"
+      className="platform-attention group relative block aspect-square w-full min-w-0"
     >
       <span className="absolute inset-0 overflow-hidden rounded-2xl bg-[var(--tenant-surface)]">
         <img
@@ -31,55 +27,39 @@ function PlatformCard({ platform, isNew = false }: PlatformCardProps) {
           }}
         />
       </span>
-      {isNew && (
-        <span className="platform-new-badge absolute -right-1 -top-2 z-10 rounded-full bg-amber-400 px-2.5 py-1 text-[9px] font-black leading-none text-black shadow-md sm:px-3 sm:text-[10px]">
-          NOVA
-        </span>
-      )}
+      <img src="/tag-nova.png" alt="Nova" className="absolute -right-1 -top-2 z-10 h-auto w-[38px]" />
     </a>
   );
 }
 
 export function RecommendedPlatforms({ plataformas }: { plataformas: Plataforma[] }) {
-  const [showAllPlatforms, setShowAllPlatforms] = useState(false);
-
   if (!plataformas.length) return null;
 
-  const hasMorePlatforms = plataformas.length > MOBILE_PLATFORM_LIMIT;
-
   return (
-    <section aria-label="Plataformas indicadas">
+    <section aria-label="Plataformas indicadas" className="recommended-platforms-panel" style={{ position: "relative", overflow: "visible", background: "#004719", border: "4px solid #00d64f", paddingTop: "2.75rem" }}>
+      <img src="/logo-painel-neon.png" alt="Slot da Sorte" className="recommended-platforms-logo" style={{ position: "absolute", top: 0, left: "50%", width: "200px", maxWidth: "38%", height: "auto", transform: "translate(-50%, -50%)", zIndex: 2 }} />
       <SectionHeading
         title="PLATAFORMAS INDICADAS"
         accentTitle
         align="center"
       />
-      <div
-        id="recommended-platforms-grid"
-        className="mx-auto flex w-full max-w-[1080px] flex-wrap justify-center gap-x-3 gap-y-5 pt-2 px-1"
-      >
-        {plataformas.map((platform, index) => (
-          <div
-            key={platform.id}
-            className={`platform-card-cell${!showAllPlatforms && index >= MOBILE_PLATFORM_LIMIT ? " hidden min-[900px]:block" : ""}`}
-          >
-            <PlatformCard platform={platform} isNew={platform.is_new ?? platform.nova ?? false} />
-          </div>
-        ))}
-      </div>
-      {hasMorePlatforms && (
-        <div className="mt-5 flex justify-center min-[900px]:hidden">
-          <button
-            type="button"
-            aria-controls="recommended-platforms-grid"
-            aria-expanded={showAllPlatforms}
-            onClick={() => setShowAllPlatforms((current) => !current)}
-            className="signal-button px-5 py-2.5"
-          >
-            {showAllPlatforms ? "Ver menos plataformas" : "Ver todas as plataformas"}
-          </button>
+      <div id="recommended-platforms-grid" className="platforms-track overflow-x-auto px-1 pb-3 pt-2">
+        <div className="flex min-w-max flex-col items-center gap-3 sm:min-w-full">
+          {[plataformas.slice(0, Math.ceil(plataformas.length * 3 / 4)), plataformas.slice(Math.ceil(plataformas.length * 3 / 4))].map((row, rowIndex) => (
+            <div key={rowIndex} className="flex justify-center gap-3">
+              {row.map((platform) => (
+                <div key={platform.id} className="w-[68px] shrink-0 sm:w-[80px]">
+                  <PlatformCard platform={platform} />
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
-      )}
+      </div>
+      <div className="recommended-platforms-domain" aria-label="Site Slot da Sorte">
+        <span>slotdasorte.com.br</span>
+      </div>
+
     </section>
   );
 }

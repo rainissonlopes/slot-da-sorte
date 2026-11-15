@@ -29,7 +29,7 @@ export function TrendingGames({ jogos }: { jogos: Jogo[] }) {
         target="_blank"
         rel="noopener noreferrer"
         tabIndex={duplicate ? -1 : undefined}
-        className="trending-card game-themed-card group relative aspect-[4/5] w-[30vw] min-w-[108px] max-w-[132px] overflow-hidden rounded-2xl border border-white/10 bg-[var(--tenant-surface)] sm:w-[180px] sm:min-w-[180px] sm:max-w-none"
+        className="trending-card game-themed-card group relative aspect-[4/5] w-[25vw] min-w-[90px] max-w-[110px] overflow-hidden rounded-2xl border border-white/10 bg-[var(--tenant-surface)] sm:w-[145px] sm:min-w-[145px] sm:max-w-none"
         data-themed={themeColor ? "true" : undefined}
         style={getGameThemeStyle(themeColor)}
       >
@@ -51,6 +51,7 @@ export function TrendingGames({ jogos }: { jogos: Jogo[] }) {
     <section aria-label="Maiores distribuições hoje">
       <SectionHeading
         title="MAIORES DISTRIBUIÇÕES HOJE"
+        align="center"
         accentTitle
       />
       <div className="trending-marquee -mx-4 overflow-hidden px-4 pb-3 sm:mx-0 sm:px-0">

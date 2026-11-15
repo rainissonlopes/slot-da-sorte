@@ -2,7 +2,7 @@ import { ArrowUpRight, Heart, Minus, TrendingDown, TrendingUp } from "lucide-rea
 import { applyGameImageFallback, buildGameImageCandidates } from "@/lib/signals/resolve-game-image";
 import { getSignalMetricBarClass } from "@/lib/signals/get-signal-metric-bar-class";
 import { getGameThemeStyle, resolveGameThemeColor } from "@/lib/signals/game-theme";
-import type { Jogo, SugestoesAposta } from "@/lib/signals/types";
+import type { Jogo } from "@/lib/signals/types";
 
 const barInfo = [
   ["Mínima", "min"],
@@ -10,10 +10,10 @@ const barInfo = [
   ["Máxima", "max"],
 ] as const;
 
-export function GameCard({ jogo, favorito, onFavorito, calcularSugestoes }: {
-  jogo: Jogo; favorito: boolean; onFavorito: (id: string) => void; calcularSugestoes: (bets: string[]) => SugestoesAposta;
+export function GameCard({ jogo, favorito, onFavorito }: {
+  jogo: Jogo; favorito: boolean; onFavorito: (id: string) => void;
 }) {
-  const sugestoes = calcularSugestoes(jogo.bets);
+  const faixas = getBetRanges(jogo.bets);
   const TrendIcon = jogo.tendencia === "Subindo" ? TrendingUp : jogo.tendencia === "Caindo" ? TrendingDown : Minus;
   const imageCandidates = buildGameImageCandidates({
     storageImageUrl: jogo.storageImageUrl,
@@ -57,9 +57,12 @@ export function GameCard({ jogo, favorito, onFavorito, calcularSugestoes }: {
           {barInfo.map(([label, key]) => <div key={key}><div className="mb-0.5 flex justify-between gap-1 text-[9px] font-extrabold text-white/85 sm:text-[10px]"><span className="truncate">{label}</span><span className="shrink-0 tabular-nums text-white">{jogo[key]}%</span></div><div className="signal-metric-track"><div className={`signal-metric-fill ${getSignalMetricBarClass(jogo[key])}`} style={{ width: `${jogo[key]}%` }} /></div></div>)}
         </div>
         <div className="game-bet-suggestions mt-3 rounded-xl border border-white/8 bg-black/20 p-2">
-          <p className="mb-1.5 truncate text-[8px] font-black uppercase tracking-[.12em] text-[var(--tenant-muted)] sm:text-[9px]">Sugestões de aposta</p>
-          <div className="grid grid-cols-3 gap-1 text-center text-[8px] sm:text-[9px]"><Bet label="Bônus" value={sugestoes.bonus} /><Bet label="Conexão" value={sugestoes.conexao} /><Bet label="Extra" value={sugestoes.extra} /></div>
-          <div className="mt-1 grid grid-cols-2 gap-1 text-center text-[8px] sm:text-[9px]"><Bet label="Padrão" value={`${sugestoes.p1} / ${sugestoes.p2}`} /><Bet label="Máxima" value={`${sugestoes.m1} / ${sugestoes.m2}`} /></div>
+          <p className="mb-2 text-center text-[9px] font-normal uppercase tracking-[.08em] text-[var(--tenant-muted)] sm:text-[10px]">Sugestões de aposta</p>
+          {faixas ? (
+            <div className="space-y-1 text-center text-[10px] font-normal leading-snug text-white/85 sm:text-[11px]">
+              {faixas.map(({ label, value }) => <p key={label}>{label}: {value}</p>)}
+            </div>
+          ) : <p className="text-center text-[9px] text-white/60">Faixas indisponíveis</p>}
         </div>
         {jogo.plataforma && <p className="mt-2 truncate text-[9px] text-[var(--tenant-muted)]">Em <strong className="text-white/80">{jogo.plataforma.nome}</strong></p>}
         <a href={jogo.link} target="_blank" rel="noopener noreferrer" className="game-access-button signal-button mt-2.5 w-full px-1 py-2 text-[10px] sm:text-xs">Jogar <ArrowUpRight size={14} /></a>
@@ -68,6 +71,21 @@ export function GameCard({ jogo, favorito, onFavorito, calcularSugestoes }: {
   );
 }
 
-function Bet({ label, value }: { label: string; value: string }) {
-  return <div className="min-w-0 rounded-md bg-white/5 px-0.5 py-1.5"><span className="block truncate text-white/50">{label}</span><strong className="mt-0.5 block truncate text-white">{value}</strong></div>;
+function getBetRanges(bets: string[]) {
+  const values = [...new Set(bets.map((bet) => {
+    const value = String(bet).replace(/\s|R\$/gi, "");
+    return Number(value.includes(",") ? value.replace(/\./g, "").replace(",", ".") : value);
+  }).filter((bet) => Number.isFinite(bet) && bet > 0))].sort((a, b) => a - b);
+  if (values.length < 3) return null;
+
+  const format = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const firstBreak = Math.ceil(values.length / 3);
+  const secondBreak = Math.ceil((values.length * 2) / 3);
+  const range = (from: number, to: number) => from === to ? format(from) : `${format(from)} a ${format(to)}`;
+
+  return [
+    { label: "Mínima", value: range(values[0], values[firstBreak - 1]) },
+    { label: "Padrão", value: range(values[firstBreak], values[secondBreak - 1]) },
+    { label: "Máxima", value: `acima de ${format(values[secondBreak])}` },
+  ];
 }

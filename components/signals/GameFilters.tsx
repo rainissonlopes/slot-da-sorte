@@ -1,18 +1,16 @@
-import { Heart, Search } from "lucide-react";
-import { SectionHeading } from "@/components/signals/SectionHeading";
+import { Globe2, Heart } from "lucide-react";
 
 export function GameFilters({ busca, onBusca, categorias, categoriaAtiva, onCategoria }: {
   busca: string; onBusca: (value: string) => void; categorias: string[]; categoriaAtiva: string; onCategoria: (value: string) => void;
 }) {
   return (
-    <section aria-label="Busque e filtre os sinais" className="signal-surface p-4 sm:p-5">
-      <SectionHeading title="BUSQUE E FILTRE OS SINAIS" accentTitle />
+    <section aria-label="Busque e filtre os sinais" className="game-filters mx-auto w-full max-w-2xl" style={{ background: "transparent", border: 0, boxShadow: "none" }}>
       <label className="relative block">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--tenant-muted)]" size={19} />
+        <span className="absolute left-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-black text-white" aria-hidden="true"><Globe2 size={22} /></span>
         <span className="sr-only">Buscar jogo</span>
-        <input value={busca} onChange={(e) => onBusca(e.target.value)} placeholder="Busque pelo nome do jogo..." className="h-12 w-full rounded-xl border border-white/10 bg-black/25 pl-12 pr-4 text-sm outline-none placeholder:text-[var(--tenant-muted)] focus:border-[var(--tenant-primary)]" />
+        <input value={busca} onChange={(e) => onBusca(e.target.value)} placeholder="Pesquise o seu jogo aqui" className="h-14 w-full rounded-full border border-white bg-white pl-14 pr-5 text-sm font-semibold text-black outline-none placeholder:text-black focus:border-[var(--tenant-primary)]" />
       </label>
-      <div className="mt-4 hidden gap-2 overflow-x-auto pb-1 sm:flex">
+      <div className="mt-4 hidden flex-wrap justify-center gap-2 pb-1 sm:flex">
         {categorias.map((categoria) => (
           <button key={categoria} onClick={() => onCategoria(categoria)} className={`filter-chip ${categoriaAtiva === categoria ? "filter-chip-active" : ""}`}>
             {categoria === "Favoritos" && <Heart size={14} fill={categoriaAtiva === categoria ? "currentColor" : "none"} />}{categoria}

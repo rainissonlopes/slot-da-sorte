@@ -74,28 +74,11 @@ input {
 }
 
 .fixed-bg {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: -1;
-  min-height: 100%;
-  background-color: #050806;
-  background-image:
-    radial-gradient(ellipse 120% 10% at 50% 11%, color-mix(in srgb, var(--tenant-primary) 6%, transparent), transparent 82%),
-    radial-gradient(ellipse 95% 11% at 106% 34%, color-mix(in srgb, var(--tenant-primary) 4%, transparent), transparent 82%),
-    radial-gradient(ellipse 105% 12% at -8% 54%, color-mix(in srgb, var(--tenant-primary) 4%, transparent), transparent 84%),
-    radial-gradient(ellipse 90% 10% at 103% 73%, color-mix(in srgb, var(--tenant-primary) 3%, transparent), transparent 84%),
-    radial-gradient(ellipse 115% 9% at 35% 92%, color-mix(in srgb, var(--tenant-primary) 3%, transparent), transparent 86%),
-    repeating-linear-gradient(135deg, rgb(255 255 255 / 0.02) 0 1px, transparent 1px 72px),
-    repeating-linear-gradient(45deg, rgb(255 255 255 / 0.014) 0 1px, transparent 1px 72px),
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--tenant-background, #050806) 82%, #070b08) 0%,
-      color-mix(in srgb, var(--tenant-background, #050806) 90%, #030604) 20%,
-      color-mix(in srgb, var(--tenant-background, #050806) 84%, #0a0f0c) 43%,
-      color-mix(in srgb, var(--tenant-background, #050806) 92%, #030604) 64%,
-      color-mix(in srgb, var(--tenant-background, #050806) 86%, #070b08) 82%,
-      color-mix(in srgb, var(--tenant-background, #050806) 92%, #030604) 100%
-    );
+  pointer-events: none;
+  background: linear-gradient(rgb(0 0 0 / 0.22), rgb(0 0 0 / 0.22)), url("/bg-slot-v2.jpg") center / cover no-repeat;
 }
 
 .signals-page {
@@ -186,8 +169,7 @@ input {
 }
 
 .site-header {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 50;
   background: transparent;
 }
@@ -332,12 +314,9 @@ input {
 }
 
 .platforms-track {
-  scrollbar-width: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--tenant-primary) transparent;
   touch-action: pan-x;
-}
-
-.platforms-track::-webkit-scrollbar {
-  display: none;
 }
 
 .platform-card-cell {
@@ -496,7 +475,7 @@ input {
 }
 
 .section-heading-accent h2 {
-  color: var(--tenant-action);
+  color: #fff;
   font-size: clamp(0.875rem, 4vw, 1.5rem);
   letter-spacing: 0.015em;
   white-space: nowrap;
@@ -797,5 +776,104 @@ input {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+.game-filters {
+  background: transparent;
+  color: #fff;
+}
+
+.game-filters .section-heading {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.game-filters .filter-chip {
+  border-color: rgb(255 255 255 / 0.18);
+  background: rgb(0 0 0 / 0.75);
+  color: #fff;
+}
+
+.game-filters .filter-chip-active {
+  border-color: var(--tenant-action);
+  background: var(--tenant-action);
+  color: #fff;
+}
+
+.game-filters .section-heading h2 {
+  border-radius: 0.5rem;
+  background: #126a35;
+  padding: 0.4rem 0.75rem;
+}
+
+.recommended-platforms-panel {
+  position: relative;
+  width: 100%;
+  max-width: 1036px;
+  margin: 2rem auto 0;
+  border: 4px solid #00d64f;
+  border-radius: 2.5rem;
+  background: #004719;
+  padding: 2.75rem 0.75rem 0.75rem;
+}
+
+.recommended-platforms-logo {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: 50%;
+  width: clamp(140px, 22vw, 215px);
+  height: auto;
+  transform: translate(-50%, -50%);
+}
+
+.recommended-platforms-panel .section-heading {
+  margin-bottom: 1rem;
+}
+
+.recommended-platforms-panel .platforms-track {
+  padding-inline: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .recommended-platforms-panel {
+    padding: 2.75rem 1rem 0.75rem;
+  }
+}
+
+.recommended-platforms-domain {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 0.5rem auto 0;
+  color: #fff;
+  font-size: clamp(0.75rem, 2vw, 1rem);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.recommended-platforms-domain span {
+  border: 1px solid #00d64f;
+  border-radius: 999px;
+  background: transparent;
+  padding: 0.4rem 1.1rem;
+}
+
+@keyframes platformAttention {
+  0%, 88%, 100% { transform: rotate(0); }
+  90%, 94% { transform: rotate(-2deg); }
+  92%, 96% { transform: rotate(2deg); }
+  98% { transform: rotate(-1deg); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .platform-attention {
+    animation: platformAttention 6s ease-in-out infinite;
+  }
+  .platforms-track div:nth-child(even) > .platform-attention {
+    animation-delay: -3s;
   }
 }
