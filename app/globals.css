@@ -580,7 +580,7 @@ input {
   }
 
   .header-social-links {
-    gap: 0;
+    gap: 0.5rem;
     order: 2;
   }
 
