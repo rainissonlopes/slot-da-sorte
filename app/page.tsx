@@ -652,7 +652,7 @@ export default function Home() {
   }
 
   return (
-    <main className="signals-page min-h-screen overflow-x-hidden pb-28 sm:pb-0" style={tenantStyles}>
+    <main className="signals-page min-h-screen overflow-x-clip pb-28 sm:pb-0" style={tenantStyles}>
       <div className="fixed-bg" />
       <SiteHeader aparencia={aparencia} whatsapp={whatsappLink} buttonText={siteConfig.headerButtonText} active={siteConfig.headerActive} socialItems={siteConfig.socialNav} />
       <div className="mobile-catalog-content space-y-12 py-4 sm:space-y-20 sm:py-10">
