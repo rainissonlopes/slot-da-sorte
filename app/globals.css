@@ -316,7 +316,7 @@ input {
 .platforms-track {
   scrollbar-width: thin;
   scrollbar-color: var(--tenant-primary) transparent;
-  touch-action: pan-x;
+  touch-action: pan-y;
 }
 
 .platform-card-cell {
