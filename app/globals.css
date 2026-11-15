@@ -606,22 +606,21 @@ input {
 
   .mobile-update-countdown {
     position: fixed;
-    right: auto;
-    bottom: calc(4rem + env(safe-area-inset-bottom, 0px) + 17px);
-    left: 50%;
+    right: 0;
+    bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+    left: 0;
     z-index: 90;
     display: flex;
-    width: max-content;
-    min-width: 230px;
+    width: 100%;
+    min-width: 0;
     min-height: 42px;
-    max-width: calc(100vw - 2rem);
+    max-width: none;
     box-sizing: border-box;
-    transform: translateX(-50%);
     align-items: center;
     justify-content: center;
     gap: 0.625rem;
     border: 1px solid color-mix(in srgb, var(--tenant-primary) 24%, transparent);
-    border-radius: 999px;
+    border-radius: 0;
     background: rgb(3 7 5 / 0.98);
     box-shadow: 0 8px 26px rgb(0 0 0 / 0.62), 0 2px 8px rgb(0 0 0 / 0.48);
     padding: 0.55rem 20px;
@@ -876,4 +875,17 @@ input {
   .platforms-track div:nth-child(even) > .platform-attention {
     animation-delay: -3s;
   }
+}
+
+.mobile-update-countdown__progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: var(--tenant-primary, #16a34a);
+  transition: width 1s linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-update-countdown__progress { transition: none; }
 }

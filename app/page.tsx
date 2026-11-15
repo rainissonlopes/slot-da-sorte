@@ -661,7 +661,7 @@ export default function Home() {
           : <div key={section.id} className="mx-auto max-w-7xl px-4 sm:px-6">{renderSiteSection(section.id)}</div>)}
       </div>
 
-      <MobileUpdateCountdown seconds={proximaAtualizacao} isUpdating={atualizandoSinais} />
+      <MobileUpdateCountdown seconds={proximaAtualizacao} isUpdating={atualizandoSinais} totalSeconds={CICLO_SEGUNDOS} />
       <MobileCatalogNav categoriaAtiva={categoriaAtiva} onCategoria={handleMobileCategoria} />
 
       {mostrarPopup && (

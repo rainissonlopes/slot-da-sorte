@@ -43,10 +43,10 @@ export function RecommendedPlatforms({ plataformas }: { plataformas: Plataforma[
         accentTitle
         align="center"
       />
-      <div id="recommended-platforms-grid" className="platforms-track overflow-x-auto px-1 pb-3 pt-2">
-        <div className="flex min-w-max flex-col items-center gap-3 sm:min-w-full">
+      <div id="recommended-platforms-grid" className="platforms-track px-1 pb-3 pt-2">
+        <div className="flex flex-wrap justify-center gap-x-3 gap-y-4 min-[1024px]:flex-col min-[1024px]:items-center min-[1024px]:gap-3">
           {[plataformas.slice(0, Math.ceil(plataformas.length * 3 / 4)), plataformas.slice(Math.ceil(plataformas.length * 3 / 4))].map((row, rowIndex) => (
-            <div key={rowIndex} className="flex justify-center gap-3">
+            <div key={rowIndex} className="contents min-[1024px]:flex min-[1024px]:justify-center min-[1024px]:gap-3">
               {row.map((platform) => (
                 <div key={platform.id} className="w-[68px] shrink-0 sm:w-[80px]">
                   <PlatformCard platform={platform} />
