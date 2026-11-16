@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { FaInstagram, FaTelegramPlane, FaWhatsapp, FaTiktok } from "react-icons/fa";
 import { supabase } from "@/lib/supabase";
 import { 
   FiGrid, 
@@ -85,6 +86,14 @@ export default function AdminPage() {
   // Navigation and Layout states
   const [activeTab, setActiveTab] = useState("overview"); // overview | platforms | signals | config | appearance
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [aviso, setAviso] = useState<{ tipo: "sucesso" | "erro"; mensagem: string } | null>(null);
+  useEffect(() => {
+    const mensagem = sessionStorage.getItem("admin-aviso");
+    if (mensagem) { sessionStorage.removeItem("admin-aviso"); setAviso({ tipo: "sucesso", mensagem }); }
+  }, []);
+  function mostrarErro(mensagem: string) { setAviso({ tipo: "erro", mensagem }); }
+  function recarregarComAviso(mensagem: string) { sessionStorage.setItem("admin-aviso", mensagem); window.location.reload(); }
+  const [canalEditando, setCanalEditando] = useState<string | null>(null);
   const [lastFetchTime, setLastFetchTime] = useState("");
 
   // Storage uploads loading state
@@ -131,6 +140,8 @@ export default function AdminPage() {
   const [isNewPlataforma, setIsNewPlataforma] = useState(false);
   const [ativoPlataforma, setAtivoPlataforma] = useState(true);
   const [plataformaEditando, setPlataformaEditando] = useState<any>(null);
+  const [formPlataformaAberto, setFormPlataformaAberto] = useState(false);
+  const [plataformaExpandida, setPlataformaExpandida] = useState<string | null>(null);
 
   // Signals states
   const [sinais, setSinais] = useState<any[]>([]);
@@ -140,6 +151,8 @@ export default function AdminPage() {
   const [corBackground, setCorBackground] = useState("#1c1c1e");
   const [betsString, setBetsString] = useState("");
   const [sinalEditando, setSinalEditando] = useState<any>(null);
+  const [formSinalAberto, setFormSinalAberto] = useState(false);
+  const [sinalExpandido, setSinalExpandido] = useState<string | null>(null);
   const [games, setGames] = useState<GameMediaRow[]>([]);
   const [ativoSinal, setAtivoSinal] = useState(true);
   const [destaqueSinal, setDestaqueSinal] = useState(false);
@@ -359,13 +372,17 @@ export default function AdminPage() {
     console.log("ERROR:", error);
 
     if (error) {
-      alert("Erro ao salvar");
+      mostrarErro("Erro ao salvar as configurações.");
       console.log(error);
       return;
     }
 
+    if (!data?.length) {
+      mostrarErro("Não foi possível salvar as configurações. Nenhum registro foi atualizado.");
+      return;
+    }
     setConfigSiteV2(nextConfigV2);
-    alert("Salvo!");
+    setAviso({ tipo: "sucesso", mensagem: "Suas configurações foram atualizadas com sucesso." });
   }
 
   // CRUD appearance (white-label)
@@ -395,13 +412,13 @@ export default function AdminPage() {
       .eq("domain", "default");
 
     if (error) {
-      alert("Erro ao salvar aparência");
+      mostrarErro("Erro ao salvar a aparência.");
       console.log(error);
       return;
     }
 
     setAppearanceV2(nextConfigV2);
-    alert("Configurações de aparência salvas com sucesso!");
+    setAviso({ tipo: "sucesso", mensagem: "As configurações de aparência foram atualizadas com sucesso." });
   }
 
   // Upload file to Supabase Storage and get public URL
@@ -415,7 +432,7 @@ export default function AdminPage() {
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      alert("Por favor, selecione um arquivo de no máximo 2MB.");
+      mostrarErro("Selecione um arquivo de no máximo 2 MB.");
       return;
     }
 
@@ -445,7 +462,7 @@ export default function AdminPage() {
       setUrl(publicUrl);
     } catch (err: any) {
       console.error("Upload error:", err);
-      alert("Erro ao fazer upload para o Supabase Storage: " + (err.message || err));
+      mostrarErro("Erro ao enviar a imagem: " + (err.message || err));
     } finally {
       setUploading(null);
     }
@@ -522,7 +539,7 @@ export default function AdminPage() {
   // CRUD platforms
   async function adicionarPlataforma() {
     if (!nomePlataforma || !linkPlataforma || !imagemPlataforma) {
-      alert("Preencha todos os campos");
+      mostrarErro("Preencha todos os campos obrigatórios.");
       return;
     }
 
@@ -546,11 +563,11 @@ export default function AdminPage() {
 
     if (error) {
       console.log(error);
-      alert("Erro ao salvar plataforma");
+      mostrarErro("Erro ao salvar a plataforma.");
       return;
     }
 
-    alert(plataformaEditando ? "Plataforma atualizada!" : "Plataforma adicionada!");
+    const mensagemSucesso = plataformaEditando ? "Plataforma atualizada com sucesso." : "Plataforma adicionada com sucesso.";
 
     setNomePlataforma("");
     setLinkPlataforma("");
@@ -560,10 +577,11 @@ export default function AdminPage() {
     setAtivoPlataforma(true);
     setPlataformaEditando(null);
 
-    window.location.reload();
+    recarregarComAviso(mensagemSucesso);
   }
 
   function editarPlataforma(p: any) {
+    setFormPlataformaAberto(true);
     setPlataformaEditando(p);
     setNomePlataforma(p.nome || "");
     setLinkPlataforma(p.link || "");
@@ -592,18 +610,17 @@ export default function AdminPage() {
 
     if (error) {
       console.log(error);
-      alert("Erro ao excluir plataforma");
+      mostrarErro("Erro ao excluir a plataforma.");
       return;
     }
 
-    alert("Plataforma excluída!");
-    window.location.reload();
+    recarregarComAviso("Plataforma excluída com sucesso.");
   }  
 
   async function atualizarStatusPlataforma(plataforma: Plataforma) {
     const ativo = plataforma.ativo === false;
     const { error } = await supabase.from("plataformas").update({ ativo }).eq("id", plataforma.id);
-    if (error) return alert("Erro ao atualizar status da plataforma");
+    if (error) return mostrarErro("Erro ao atualizar o status da plataforma.");
     setPlataformas((current) => current.map((item) => item.id === plataforma.id ? { ...item, ativo } : item));
   }
 
@@ -618,7 +635,7 @@ export default function AdminPage() {
       supabase.from("plataformas").update({ ordem: targetOrder }).eq("id", current.id),
       supabase.from("plataformas").update({ ordem: currentOrder }).eq("id", target.id),
     ]);
-    if (currentError || targetError) return alert("Erro ao reordenar plataformas");
+    if (currentError || targetError) return mostrarErro("Erro ao reordenar as plataformas.");
     const reordered = [...plataformas];
     reordered[index] = { ...target, ordem: currentOrder };
     reordered[targetIndex] = { ...current, ordem: targetOrder };
@@ -628,12 +645,12 @@ export default function AdminPage() {
   // CRUD signals
   async function adicionarSinal() {
     if (!nomeJogo || !categoriaJogo || !imagemUrl) {
-      alert("Preencha todos os campos obrigatórios: Nome do jogo, Categoria e URL da imagem");
+      mostrarErro("Preencha os campos obrigatórios: nome do jogo, categoria e imagem.");
       return;
     }
 
     const betsArray = betsString
-      ? betsString.split(",").map((b) => b.trim()).filter(Boolean)
+      ? (betsString.includes(";") ? betsString.split(";") : /^\s*\d+,\d{1,2}\s*$/.test(betsString) ? [betsString] : betsString.split(",")).map((b) => b.trim()).filter(Boolean)
       : [];
 
     const normalizedThemeColor = themeColorSinal ? normalizeGameThemeColor(themeColorSinal) : null;
@@ -666,7 +683,7 @@ export default function AdminPage() {
 
     if (error) {
       console.log(error);
-      alert("Erro ao salvar sinal");
+      mostrarErro("Erro ao salvar o sinal.");
       return;
     }
 
@@ -684,7 +701,7 @@ export default function AdminPage() {
       setGames((current) => current.map((game) => Number(game.id) === gameId ? { ...game, theme_color: normalizedThemeColor } : game));
     }
 
-    alert(sinalEditando ? "Sinal atualizado!" : "Sinal adicionado!");
+    const mensagemSucesso = sinalEditando ? "Sinal atualizado com sucesso." : "Sinal adicionado com sucesso.";
 
     setNomeJogo("");
     setCategoriaJogo("PG");
@@ -699,10 +716,11 @@ export default function AdminPage() {
     setCardColorSaveError("");
     setSinalEditando(null);
 
-    window.location.reload();
+    recarregarComAviso(mensagemSucesso);
   }
 
   function editarSinal(s: any) {
+    setFormSinalAberto(true);
     const associatedGame = findAssociatedGame(s, games);
     setSinalEditando(s);
     setNomeJogo(s.nome_jogo || "");
@@ -710,7 +728,7 @@ export default function AdminPage() {
     setImagemUrl(s.imagem_url || "");
     setImagemPersonalizadaSinal(s.imagem_personalizada === true);
     setCorBackground(s.cor_background || "#1c1c1e");
-    setBetsString(s.bets ? s.bets.join(", ") : "");
+    setBetsString(s.bets ? s.bets.join("; ") : "");
     setAtivoSinal(s.ativo !== false);
     setDestaqueSinal(s.destaque === true);
     setGameIdSinal(String(associatedGame?.id || ""));
@@ -737,18 +755,17 @@ export default function AdminPage() {
 
     if (error) {
       console.log(error);
-      alert("Erro ao excluir sinal");
+      mostrarErro("Erro ao excluir o sinal.");
       return;
     }
 
-    alert("Sinal excluído!");
-    window.location.reload();
+    recarregarComAviso("Sinal excluído com sucesso.");
   }
 
   async function atualizarStatusSinal(sinal: SinalRow) {
     const ativo = sinal.ativo === false;
     const { error } = await supabase.from("sinais").update({ ativo }).eq("id", sinal.id);
-    if (error) return alert("Erro ao atualizar status do sinal");
+    if (error) return mostrarErro("Erro ao atualizar o status do sinal.");
     setSinais((current) => current.map((item) => item.id === sinal.id ? { ...item, ativo } : item));
   }
 
@@ -800,7 +817,7 @@ export default function AdminPage() {
   ];
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-zinc-955 text-zinc-200">
+    <div className="admin-sidebar flex flex-col h-full text-zinc-200">
       {/* Brand Header */}
       <div className="flex items-center gap-3 px-6 py-6 border-b border-zinc-900">
         <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 via-green-500 to-emerald-400 flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.35)]">
@@ -850,7 +867,7 @@ export default function AdminPage() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-bold text-zinc-300 truncate">{session?.user?.email || "Administrador"}</p>
-            <p className="text-[10px] text-zinc-505 truncate">Ativo</p>
+            <p className="text-[10px] text-zinc-400 truncate">Ativo</p>
           </div>
         </div>
         <button
@@ -904,8 +921,120 @@ export default function AdminPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-zinc-100 flex font-sans antialiased overflow-x-hidden">
+    <div className="admin-shell min-h-screen text-zinc-100 flex font-sans antialiased overflow-x-hidden">
       <style>{`
+
+.admin-social-item {
+  border: 1px solid #3c5143;
+  background: #202f25;
+  transition: border-color 180ms ease, background-color 180ms ease;
+}
+.admin-social-item:hover, .admin-social-item[open] {
+  border-color: #62bd83;
+  background: #263a2c;
+}
+.admin-social-item summary:focus-visible {
+  outline: 2px solid #8be6aa;
+  outline-offset: 4px;
+  border-radius: 0.4rem;
+}
+.admin-social-edit {
+  border: 1px solid #54bd7b;
+  background: #16472b;
+  color: #c7f8d7;
+}
+.admin-social-status {
+  display: inline-block;
+  margin-left: 0.5rem;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+.admin-social-status--active { background: #174a2d; color: #9af0b9; }
+.admin-social-status--inactive { background: #3c3524; color: #f4d48a; }
+
+.admin-channel-icon { display:grid; width:2.5rem; height:2.5rem; flex:none; place-items:center; border-radius:0.75rem; color:white; }
+.admin-channel-instagram { background:linear-gradient(135deg,#7638c7,#e43b80,#f2a739); }
+.admin-channel-telegram { background:#168fce; }
+.admin-channel-tiktok { background:#050807; }
+.admin-channel-switch { position:relative; display:inline-flex; flex:none; }
+.admin-channel-switch input { position:absolute; opacity:0; width:100%; height:100%; cursor:pointer; }
+.admin-channel-switch span { display:block; width:2.5rem; height:1.4rem; border-radius:999px; background:#53605a; transition:background .2s; }
+.admin-channel-switch span::after { display:block; width:1rem; height:1rem; margin:.2rem; border-radius:50%; background:white; content:""; transition:transform .2s; }
+.admin-channel-switch input:checked + span { background:#00bd63; }
+.admin-channel-switch input:checked + span::after { transform:translateX(1.1rem); }
+.admin-channel-switch input:focus-visible + span { outline:2px solid #8be6aa; outline-offset:3px; }
+/* Administrative workspace */
+.admin-shell {
+  background: #0b100e;
+  color: #eef5f0;
+}
+.admin-sidebar {
+  background: #101713;
+}
+.admin-topbar {
+  background: rgb(12 19 15 / 0.94);
+  border-color: #25322a;
+}
+.admin-content {
+  padding-bottom: 4rem;
+}
+.admin-welcome {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.25rem 0;
+}
+.admin-welcome h1 {
+  margin-top: 0.4rem;
+  color: #f5faf6;
+  font-size: clamp(1.6rem, 2.5vw, 2.1rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+.admin-welcome p:not(.admin-eyebrow) {
+  margin-top: 0.4rem;
+  color: #9bac9f;
+  font-size: 0.875rem;
+}
+.admin-eyebrow {
+  color: #71d99a;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+.admin-metric, .admin-surface {
+  border: 1px solid #29382e;
+  background: linear-gradient(145deg, #18221c, #121a15);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.13);
+}
+.admin-metric {
+  min-height: 150px;
+  transition: border-color 180ms ease, transform 180ms ease;
+}
+.admin-metric:hover {
+  border-color: #41614c;
+  transform: translateY(-2px);
+}
+.admin-list-item {
+  border: 1px solid #29372d;
+  background: #111914;
+  transition: background 180ms ease, border-color 180ms ease;
+}
+.admin-list-item:hover {
+  border-color: #41614c;
+  background: #19261d;
+}
+.admin-shell input, .admin-shell textarea, .admin-shell select {
+  color-scheme: dark;
+}
+.admin-shell button:focus-visible, .admin-shell a:focus-visible {
+  outline: 2px solid #71d99a;
+  outline-offset: 3px;
+}
+
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(6px); }
           to { opacity: 1; transform: translateY(0); }
@@ -936,6 +1065,14 @@ export default function AdminPage() {
         }
       `}</style>
 
+      {aviso && (
+        <div role={aviso.tipo === "erro" ? "alert" : "status"} className={`fixed right-4 top-4 z-[100] flex w-[calc(100%-2rem)] max-w-sm items-start gap-3 rounded-2xl border p-4 text-white shadow-[0_16px_45px_rgba(0,0,0,0.45)] sm:right-6 sm:top-6 ${aviso.tipo === "erro" ? "border-red-400/40 bg-[#321b1b]" : "border-emerald-400/35 bg-[#10251a]"}`}>
+          <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${aviso.tipo === "erro" ? "bg-red-500/20 text-red-300" : "bg-emerald-500/20 text-emerald-300"}`}>{aviso.tipo === "erro" ? <FiX className="h-5 w-5" /> : <FiCheck className="h-5 w-5" />}</span>
+          <div className="min-w-0 flex-1"><p className="text-sm font-bold">{aviso.tipo === "erro" ? "Não foi possível concluir" : "Tudo certo"}</p><p className="mt-1 text-xs leading-5 text-white/80">{aviso.mensagem}</p></div>
+          <button type="button" onClick={() => setAviso(null)} aria-label="Fechar aviso" className="rounded-lg p-1 text-white/70 hover:bg-white/10 hover:text-white"><FiX className="h-4 w-4" /></button>
+        </div>
+      )}
+
       {/* Desktop Sidebar (Fixed Left) */}
       <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 bg-zinc-950 border-r border-zinc-900 z-50">
         <SidebarContent />
@@ -963,7 +1100,7 @@ export default function AdminPage() {
       {/* Main Container */}
       <div className="md:pl-64 flex flex-col flex-1 min-w-0">
         {/* Header */}
-        <header className="sticky top-0 bg-black/80 backdrop-blur-md border-b border-zinc-900 h-16 flex items-center justify-between px-6 z-40">
+        <header className="admin-topbar sticky top-0 backdrop-blur-md border-b h-16 flex items-center justify-between px-6 z-40">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsMobileMenuOpen(true)}
@@ -1004,11 +1141,14 @@ export default function AdminPage() {
         </header>
 
         {/* Content Body */}
-        <main className="flex-1 p-6 md:p-8 space-y-8 max-w-7xl w-full mx-auto">
+        <main className="admin-content flex-1 p-5 md:p-8 space-y-8 max-w-7xl w-full mx-auto">
           
           {/* TAB 1: VISÃO GERAL */}
           {activeTab === "overview" && (
             <div className="space-y-8 animate-fade-in">
+              <div className="admin-welcome">
+                <div><p className="admin-eyebrow">PAINEL DE CONTROLE</p><h1>Visão geral</h1><p>Acompanhe as plataformas e os sinais do seu site em um só lugar.</p></div>
+              </div>
               {/* Summary Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {overviewCards.map((card, idx) => {
@@ -1016,7 +1156,7 @@ export default function AdminPage() {
                   return (
                     <div 
                       key={idx}
-                      className="relative overflow-hidden bg-zinc-900/30 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02] hover:border-zinc-700/80 hover:shadow-[0_0_20px_rgba(16,185,129,0.05)] group"
+                      className="admin-metric relative overflow-hidden rounded-2xl p-6 group"
                     >
                       <div className={`absolute -right-10 -bottom-10 w-24 h-24 rounded-full bg-gradient-to-br ${card.glowColor} blur-2xl group-hover:scale-125 transition-transform duration-500`} />
                       
@@ -1044,20 +1184,20 @@ export default function AdminPage() {
               </div>
 
               {/* Quick Actions Shortcuts */}
-              <div className="bg-zinc-900/10 border border-zinc-900 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="admin-surface admin-quick-actions rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <h4 className="font-bold text-white text-sm">Ações Rápidas</h4>
-                  <p className="text-xs text-zinc-550">Escolha o que deseja fazer ou gerenciar a seguir.</p>
+                  <p className="text-xs text-zinc-400">Escolha o que deseja fazer ou gerenciar a seguir.</p>
                 </div>
-                <div className="flex items-center gap-3 w-full sm:w-auto">
+                <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                   <button 
-                    onClick={() => setActiveTab("platforms")}
+                    onClick={() => { setActiveTab("platforms"); setFormPlataformaAberto(true); }}
                     className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500 text-black font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-emerald-400 transition-all cursor-pointer"
                   >
                     <FiPlus className="w-4 h-4" /> Plataforma
                   </button>
                   <button 
-                    onClick={() => setActiveTab("signals")}
+                    onClick={() => { setActiveTab("signals"); setFormSinalAberto(true); }}
                     className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 bg-amber-400 text-black font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-amber-300 transition-all cursor-pointer"
                   >
                     <FiPlus className="w-4 h-4" /> Sinal de Slot
@@ -1074,7 +1214,7 @@ export default function AdminPage() {
               {/* Grid of lists */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Recent Platforms Summary */}
-                <div className="bg-zinc-900/30 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-6">
+                <div className="admin-surface rounded-2xl p-6">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-sm font-bold uppercase tracking-wider text-white flex items-center gap-2">
                       <FiLayers className="text-emerald-400" /> Plataformas Recentes
@@ -1088,7 +1228,7 @@ export default function AdminPage() {
                   </div>
                   <div className="space-y-3">
                     {plataformas.slice(0, 3).map((p) => (
-                      <div key={p.id} className="flex items-center gap-3 bg-zinc-950/40 border border-zinc-900 rounded-xl p-3 hover:bg-zinc-900/20 transition-all">
+                      <div key={p.id} className="admin-list-item flex items-center gap-3 rounded-xl p-3">
                         <img src={p.imagem} alt={p.nome} onError={(e) => { e.currentTarget.src = "/placeholder.webp"; }} className="w-10 h-10 rounded-lg object-cover bg-black" />
                         <div className="flex-1 min-w-0">
                           <h4 className="font-bold text-sm text-zinc-200 truncate">{p.nome}</h4>
@@ -1106,7 +1246,7 @@ export default function AdminPage() {
                 </div>
 
                 {/* Recent Signals Summary */}
-                <div className="bg-zinc-900/30 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-6">
+                <div className="admin-surface rounded-2xl p-6">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-sm font-bold uppercase tracking-wider text-white flex items-center gap-2">
                       <FiPlayCircle className="text-amber-400" /> Sinais Recentes
@@ -1120,7 +1260,7 @@ export default function AdminPage() {
                   </div>
                   <div className="space-y-3">
                     {sinais.slice(0, 3).map((s) => (
-                      <div key={s.id} className="flex items-center gap-3 bg-zinc-955/40 border border-zinc-900 rounded-xl p-3 hover:bg-zinc-900/20 transition-all">
+                      <div key={s.id} className="admin-list-item flex items-center gap-3 rounded-xl p-3">
                         <img 
                           src={
                             s.imagem_url.startsWith("http") || s.imagem_url.startsWith("/")
@@ -1145,7 +1285,7 @@ export default function AdminPage() {
                       </div>
                     ))}
                     {sinais.length === 0 && (
-                      <p className="text-xs text-zinc-550 py-6 text-center">Nenhum sinal cadastrado.</p>
+                      <p className="text-xs text-zinc-400 py-6 text-center">Nenhum sinal cadastrado.</p>
                     )}
                   </div>
                 </div>
@@ -1155,17 +1295,18 @@ export default function AdminPage() {
 
           {/* TAB 2: PLATAFORMAS */}
           {activeTab === "platforms" && (
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 animate-fade-in">
-              {/* Form Col */}
-              <div className="xl:col-span-1 bg-zinc-900/30 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-6 self-start">
+            <div className="space-y-5 animate-fade-in">
+              {formPlataformaAberto && (
+              <div className="admin-surface mx-auto w-full max-w-2xl rounded-2xl p-6 self-start">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
                     <FiPlus className={plataformaEditando ? "text-amber-400 animate-pulse" : "text-emerald-400"} />
                     {plataformaEditando ? "Editar Plataforma" : "Nova Plataforma"}
                   </h3>
-                  {plataformaEditando && (
+                  {true && (
                     <button
                       onClick={() => {
+                        setFormPlataformaAberto(false);
                         setPlataformaEditando(null);
                         setNomePlataforma("");
                         setLinkPlataforma("");
@@ -1206,6 +1347,8 @@ export default function AdminPage() {
                     />
                   </div>
 
+                  <div className="flex flex-wrap items-start gap-5">
+                  <div className="w-32 max-w-full">
                   {renderUploader(
                     "Logomarca da Plataforma",
                     "plataformas",
@@ -1214,9 +1357,10 @@ export default function AdminPage() {
                     "plataforma",
                     "aspect-square"
                   )}
+                  </div>
 
                   {imagemPlataforma && (
-                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-3">
+                    <div className="w-32 max-w-full rounded-2xl border border-zinc-800 bg-zinc-950/70 p-3">
                       <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-zinc-500">Preview do card</p>
                       <div className="relative mx-auto aspect-square max-w-40 overflow-hidden rounded-2xl border border-white/10">
                         <img src={imagemPlataforma} alt="Preview da plataforma" className="h-full w-full object-cover" />
@@ -1225,6 +1369,7 @@ export default function AdminPage() {
                       <p className="mt-2 truncate text-center text-xs font-bold text-white">{nomePlataforma || "Nome da plataforma"}</p>
                     </div>
                   )}
+                  </div>
 
                   <div>
                     <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-505">
@@ -1256,81 +1401,38 @@ export default function AdminPage() {
                   </button>
                 </div>
               </div>
-
-              {/* Table Col */}
-              <div className="xl:col-span-2 bg-zinc-900/30 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-6 flex flex-col overflow-hidden">
-                <h3 className="text-sm font-black uppercase tracking-wider text-white mb-6 flex items-center gap-2">
-                  <FiLayers className="text-emerald-400" /> Plataformas Ativas ({plataformas.length})
-                </h3>
-
-                <div className="overflow-x-auto max-h-[600px] border border-zinc-800/60 rounded-xl scrollbar-thin">
-                  <table className="w-full text-left border-collapse">
-                    <thead className="sticky top-0 bg-zinc-950 z-10 border-b border-zinc-850">
-                      <tr>
-                        <th className="px-5 py-3.5 text-xs font-black uppercase tracking-wider text-zinc-400 w-20">Imagem</th>
-                        <th className="px-5 py-3.5 text-xs font-black uppercase tracking-wider text-zinc-400">Nome</th>
-                        <th className="px-5 py-3.5 text-xs font-black uppercase tracking-wider text-zinc-400 hidden md:table-cell">Link</th>
-                        <th className="px-5 py-3.5 text-xs font-black uppercase tracking-wider text-zinc-400 w-24">Ordem</th>
-                        <th className="px-5 py-3.5 text-xs font-black uppercase tracking-wider text-zinc-400 w-24">Status</th>
-                        <th className="px-5 py-3.5 text-xs font-black uppercase tracking-wider text-zinc-400 w-40 text-right">Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-900/80">
-                      {plataformas.map((p, index) => (
-                        <tr key={p.id} className="hover:bg-zinc-900/30 transition-all duration-150">
-                          <td className="px-5 py-4">
-                            <img
-                              src={p.imagem}
-                              alt={p.nome}
-                              onError={(e) => { e.currentTarget.src = "/placeholder.webp"; }}
-                              className="w-10 h-10 rounded-xl object-cover bg-black border border-zinc-855 shadow-md"
-                            />
-                          </td>
-                          <td className="px-5 py-4 font-bold text-sm text-white">{p.nome}</td>
-                          <td className="px-5 py-4 text-xs text-zinc-500 max-w-xs truncate hidden md:table-cell">
-                            <a href={p.link} target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 transition-colors flex items-center gap-1">
-                              {p.link}
-                            </a>
-                          </td>
-                          <td className="px-5 py-4 text-sm text-zinc-405 font-mono font-bold">{p.ordem}</td>
-                          <td className="px-5 py-4">
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 text-[9px] font-black uppercase rounded-full border ${p.ativo === false ? "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"}`}>
-                              <span className={`w-1.5 h-1.5 rounded-full ${p.ativo === false ? "bg-zinc-500" : "bg-emerald-500 animate-pulse"}`}></span>
-                              {p.ativo === false ? "Inativa" : "Ativa"}{p.is_new ? " · Nova" : ""}
-                            </span>
-                          </td>
-                          <td className="px-5 py-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <button onClick={() => moverPlataforma(index, -1)} disabled={index === 0} aria-label={`Subir ${p.nome}`} className="rounded-lg border border-zinc-700 p-1.5 text-zinc-300 disabled:opacity-30"><FiArrowUp className="h-3 w-3" /></button>
-                              <button onClick={() => moverPlataforma(index, 1)} disabled={index === plataformas.length - 1} aria-label={`Descer ${p.nome}`} className="rounded-lg border border-zinc-700 p-1.5 text-zinc-300 disabled:opacity-30"><FiArrowDown className="h-3 w-3" /></button>
-                              <button onClick={() => atualizarStatusPlataforma(p)} className="rounded-lg border border-blue-400/20 bg-blue-400/5 p-1.5 text-blue-400" aria-label={`${p.ativo === false ? "Ativar" : "Desativar"} ${p.nome}`}><FiEye className="h-3 w-3" /></button>
-                              <button
-                                onClick={() => editarPlataforma(p)}
-                                className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-400 bg-amber-400/5 hover:bg-amber-400/15 border border-amber-400/20 px-2 py-1.5 rounded-lg transition-all cursor-pointer"
-                              >
-                                <FiEdit className="w-3 h-3" />
-                                Editar
-                              </button>
-                              <button
-                                onClick={() => excluirPlataforma(p.id)}
-                                className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-red-400 bg-red-400/5 hover:bg-red-400/15 border border-red-400/20 px-2 py-1.5 rounded-lg transition-all cursor-pointer"
-                              >
-                                <FiTrash2 className="w-3 h-3" />
-                                Excluir
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      {plataformas.length === 0 && (
-                        <tr>
-                          <td colSpan={6} className="px-5 py-8 text-center text-xs text-zinc-500">
-                            Nenhuma plataforma cadastrada.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+              )}
+              <div className="admin-surface rounded-2xl p-4 sm:p-6">
+                <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+                  <div><h3 className="text-lg font-bold text-white">Plataformas</h3><p className="mt-1 text-sm text-zinc-400">{plataformas.length} cadastradas · {plataformas.filter((item) => item.ativo !== false).length} ativas</p></div>
+                  <button type="button" onClick={() => { setPlataformaEditando(null); setNomePlataforma(""); setLinkPlataforma(""); setImagemPlataforma(""); setOrdemPlataforma(0); setIsNewPlataforma(false); setAtivoPlataforma(true); setFormPlataformaAberto(true); }} className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-black hover:bg-emerald-400"><FiPlus /> Nova plataforma</button>
+                </div>
+                <div className="space-y-2">
+                  {plataformas.map((platform, index) => {
+                    const expanded = plataformaExpandida === String(platform.id);
+                    return (
+                      <div key={platform.id} className="rounded-xl border border-white/10 bg-black/20">
+                        <div className="flex items-center gap-2 p-3 sm:gap-4">
+                          <button type="button" aria-expanded={expanded} onClick={() => setPlataformaExpandida(expanded ? null : String(platform.id))} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                            <img src={platform.imagem} alt="" onError={(event) => { event.currentTarget.src = "/placeholder.webp"; }} className="h-11 w-11 shrink-0 rounded-lg object-cover" />
+                            <span className="min-w-0"><span className="block truncate text-sm font-bold text-white">{platform.nome}</span><span className="mt-1 block text-xs text-zinc-400">{platform.ativo === false ? "Inativa" : "Ativa"} · {expanded ? "Ocultar detalhes" : "Ver detalhes"}</span></span>
+                          </button>
+                          <button type="button" onClick={() => editarPlataforma(platform)} aria-label={`Editar ${platform.nome}`} className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-zinc-200 hover:bg-white/10">Editar</button>
+                          <button type="button" onClick={() => excluirPlataforma(platform.id)} aria-label={`Excluir ${platform.nome}`} className="rounded-lg border border-red-400/20 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-400/10">Excluir</button>
+                        </div>
+                        {expanded && <div className="border-t border-white/10 px-4 py-4 text-sm text-zinc-300">
+                          <p className="break-all"><span className="text-zinc-400">Link: </span><a href={platform.link} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">{platform.link}</a></p>
+                          <p className="mt-2 text-zinc-400">Ordem: {platform.ordem ?? 0} · {platform.is_new ? "Marcada como nova" : "Sem etiqueta de nova"}</p>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <button type="button" onClick={() => moverPlataforma(index, -1)} disabled={index === 0} className="rounded-lg border border-white/10 px-3 py-2 text-xs disabled:opacity-30">↑ Subir</button>
+                            <button type="button" onClick={() => moverPlataforma(index, 1)} disabled={index === plataformas.length - 1} className="rounded-lg border border-white/10 px-3 py-2 text-xs disabled:opacity-30">↓ Descer</button>
+                            <button type="button" onClick={() => atualizarStatusPlataforma(platform)} className="rounded-lg border border-white/10 px-3 py-2 text-xs">{platform.ativo === false ? "Ativar" : "Desativar"}</button>
+                          </div>
+                        </div>}
+                      </div>
+                    );
+                  })}
+                  {plataformas.length === 0 && <p className="py-8 text-center text-sm text-zinc-400">Nenhuma plataforma cadastrada.</p>}
                 </div>
               </div>
             </div>
@@ -1338,17 +1440,18 @@ export default function AdminPage() {
 
           {/* TAB 3: SINAIS */}
           {activeTab === "signals" && (
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 animate-fade-in">
+            <div className="space-y-5 animate-fade-in">
               {/* Form Col */}
-              <div className="xl:col-span-1 bg-zinc-900/30 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-6 self-start">
+              {formSinalAberto && <div className="admin-surface mx-auto w-full max-w-3xl rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
                     <FiPlus className={sinalEditando ? "text-amber-400 animate-pulse" : "text-emerald-400"} />
                     {sinalEditando ? "Editar Sinal" : "Novo Sinal"}
                   </h3>
-                  {sinalEditando && (
+                  {true && (
                     <button
                       onClick={() => {
+                        setFormSinalAberto(false);
                         setSinalEditando(null);
                         setNomeJogo("");
                         setCategoriaJogo("PG");
@@ -1568,13 +1671,13 @@ export default function AdminPage() {
                   </div>
 
                   <div>
-                    <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-550">
-                      Valores de Apostas (Separados por vírgula)
+                    <label className="block mb-1.5 text-xs font-bold uppercase tracking-wider text-zinc-400">
+                      Valores de Apostas (separados por ponto e vírgula)
                     </label>
                     <textarea
                       value={betsString}
                       onChange={(e) => setBetsString(e.target.value)}
-                      placeholder="ex: 0.50, 1.20, 2.40, 5.00"
+                      placeholder="ex: 0,50; 1,20; 2,40; 5,00"
                       className="w-full h-20 rounded-xl bg-zinc-955/80 border border-zinc-800 px-4 py-2.5 text-sm text-white placeholder-zinc-605 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition-all resize-none font-mono"
                     />
                   </div>
@@ -1591,14 +1694,17 @@ export default function AdminPage() {
                   </button>
                 </div>
               </div>
+}
 
               {/* Table Col */}
-              <div className="xl:col-span-2 bg-zinc-900/30 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-6 flex flex-col space-y-4 overflow-hidden">
+              <div className="admin-surface rounded-2xl p-4 sm:p-6 flex flex-col space-y-4">
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <h3 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
                     <FiPlayCircle className="text-emerald-400" /> Lista de Sinais ({sinaisFiltrados.length})
                   </h3>
+
+                  <button type="button" onClick={() => { setSinalEditando(null); setNomeJogo(""); setCategoriaJogo("PG"); setImagemUrl(""); setImagemPersonalizadaSinal(false); setCorBackground("#1c1c1e"); setBetsString(""); setAtivoSinal(true); setDestaqueSinal(false); setGameIdSinal(""); setThemeColorSinal(""); setCardColorSaveError(""); setFormSinalAberto(true); }} className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-black hover:bg-emerald-400"><FiPlus /> Novo sinal</button>
 
                   {/* Search bar */}
                   <div className="relative w-full sm:w-64">
@@ -1621,92 +1727,27 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                <div className="overflow-x-auto max-h-[600px] border border-zinc-800/60 rounded-xl scrollbar-thin">
-                  <table className="w-full text-left border-collapse">
-                    <thead className="sticky top-0 bg-zinc-950 z-10 border-b border-zinc-855">
-                      <tr>
-                        <th className="px-5 py-3.5 text-xs font-black uppercase tracking-wider text-zinc-400 w-20">Jogo</th>
-                        <th className="px-5 py-3.5 text-xs font-black uppercase tracking-wider text-zinc-400">Nome</th>
-                        <th className="px-5 py-3.5 text-xs font-black uppercase tracking-wider text-zinc-400 w-32">Categoria</th>
-                        <th className="px-5 py-3.5 text-xs font-black uppercase tracking-wider text-zinc-400 hidden md:table-cell">Sugestões de Bet</th>
-                        <th className="px-5 py-3.5 text-xs font-black uppercase tracking-wider text-zinc-400 w-40 text-right">Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-900/80">
-                      {sinaisExibidos.map((s) => {
-                        const imageInfo = getSignalImageInfo(s, games);
-                        return (
-                        <tr key={s.id} className="hover:bg-zinc-900/30 transition-all duration-150">
-                          <td className="px-5 py-4">
-                            <img
-                              src={imageInfo.src}
-                              alt={s.nome_jogo}
-                              onError={(e) => {
-                                if (e.currentTarget.dataset.fallbackApplied === "true") return;
-                                e.currentTarget.dataset.fallbackApplied = "true";
-                                e.currentTarget.src = GAME_IMAGE_PLACEHOLDER;
-                              }}
-                              className="w-10 h-10 rounded-xl object-cover bg-black border border-zinc-850"
-                            />
-                            <span className={`mt-1 inline-flex text-[8px] font-black uppercase ${imageInfo.placeholder ? "text-amber-400" : "text-emerald-400"}`}><FiImage className="mr-1" />{imageInfo.placeholder ? "Placeholder" : "Válida"}</span>
-                          </td>
-                          <td className="px-5 py-4 font-bold text-sm text-white"><div className="flex items-center gap-1">{s.nome_jogo}{s.destaque && <FiStar className="text-amber-400" />}</div><p className="mt-1 text-[9px] font-normal text-zinc-500">{imageInfo.game ? `games #${imageInfo.game.id} · ${imageInfo.game.name}` : "Sem associação em public.games"}</p><button onClick={() => atualizarStatusSinal(s)} className={`mt-1 text-[9px] font-black uppercase ${s.ativo === false ? "text-zinc-500" : "text-emerald-400"}`}>{s.ativo === false ? "Inativo · ativar" : "Ativo · desativar"}</button></td>
-                          <td className="px-5 py-4">
-                            <span className={`inline-flex px-2.5 py-0.5 text-[9px] font-black uppercase rounded-full border ${
-                              s.categoria_jogo === "PG" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
-                              s.categoria_jogo === "PP" ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
-                              "bg-purple-500/10 text-purple-400 border-purple-500/20"
-                            }`}>
-                              {s.categoria_jogo} Games
-                            </span>
-                          </td>
-                          <td className="px-5 py-4 text-xs text-zinc-400 hidden md:table-cell">
-                            {s.bets && s.bets.length > 0 ? (
-                              <div className="flex gap-1.5 flex-wrap">
-                                {s.bets.slice(0, 3).map((b: string, i: number) => (
-                                  <span key={i} className="bg-zinc-955 text-zinc-400 px-1.5 py-0.5 rounded border border-zinc-855 font-mono text-[10px]">
-                                    {b}
-                                  </span>
-                                ))}
-                                {s.bets.length > 3 && (
-                                  <span className="text-zinc-650 text-[10px] self-center">
-                                    +{s.bets.length - 3} mais
-                                  </span>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-zinc-600 font-normal italic">Nenhuma configurada</span>
-                            )}
-                          </td>
-                          <td className="px-5 py-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                onClick={() => editarSinal(s)}
-                                className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-400 bg-amber-400/5 hover:bg-amber-400/15 border border-amber-400/20 px-2 py-1.5 rounded-lg transition-all cursor-pointer"
-                              >
-                                <FiEdit className="w-3 h-3" />
-                                Editar
-                              </button>
-                              <button
-                                onClick={() => excluirSinal(s.id)}
-                                className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-red-400 bg-red-400/5 hover:bg-red-400/15 border border-red-400/20 px-2 py-1.5 rounded-lg transition-all cursor-pointer"
-                              >
-                                <FiTrash2 className="w-3 h-3" />
-                                Excluir
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );})}
-                      {sinaisFiltrados.length === 0 && (
-                        <tr>
-                          <td colSpan={5} className="px-5 py-8 text-center text-xs text-zinc-500">
-                            Nenhum sinal encontrado.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                <div className="space-y-2">
+                  {sinaisExibidos.map((signal) => {
+                    const imageInfo = getSignalImageInfo(signal, games);
+                    const expanded = sinalExpandido === String(signal.id);
+                    return <div key={signal.id} className="rounded-xl border border-white/10 bg-black/20">
+                      <div className="flex items-center gap-2 p-3 sm:gap-4">
+                        <button type="button" aria-expanded={expanded} onClick={() => setSinalExpandido(expanded ? null : String(signal.id))} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                          <img src={imageInfo.src} alt="" onError={(event) => { event.currentTarget.src = GAME_IMAGE_PLACEHOLDER; }} className="h-11 w-11 shrink-0 rounded-lg object-cover" />
+                          <span className="min-w-0"><span className="block truncate text-sm font-bold text-white">{signal.nome_jogo}</span><span className="mt-1 block text-xs text-zinc-400">{signal.categoria_jogo} · {signal.ativo === false ? "Inativo" : "Ativo"} · {expanded ? "Ocultar detalhes" : "Ver detalhes"}</span></span>
+                        </button>
+                        <button type="button" onClick={() => editarSinal(signal)} aria-label={`Editar ${signal.nome_jogo}`} className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-zinc-200 hover:bg-white/10">Editar</button>
+                        <button type="button" onClick={() => excluirSinal(signal.id)} aria-label={`Excluir ${signal.nome_jogo}`} className="rounded-lg border border-red-400/20 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-400/10">Excluir</button>
+                      </div>
+                      {expanded && <div className="space-y-2 border-t border-white/10 px-4 py-4 text-sm text-zinc-300">
+                        <p>Imagem: {imageInfo.placeholder ? "Pendente" : "Válida"} · {signal.destaque ? "Em destaque" : "Sem destaque"}</p>
+                        <p className="break-words">Apostas: {signal.bets?.length ? signal.bets.join(", ") : "Nenhuma configurada"}</p>
+                        <button type="button" onClick={() => atualizarStatusSinal(signal)} className="rounded-lg border border-white/10 px-3 py-2 text-xs">{signal.ativo === false ? "Ativar" : "Desativar"}</button>
+                      </div>}
+                    </div>;
+                  })}
+                  {sinaisFiltrados.length === 0 && <p className="py-8 text-center text-sm text-zinc-400">Nenhum sinal encontrado.</p>}
                 </div>
 
                 {/* Paginação Carregar Mais */}
@@ -1725,18 +1766,27 @@ export default function AdminPage() {
 
           {/* TAB 4: CONFIGURAÇÕES REDES SOCIAIS */}
           {activeTab === "config" && (
-            <div className="max-w-2xl bg-zinc-900/30 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-6 md:p-8 space-y-6 animate-fade-in">
+            <div className="max-w-3xl admin-surface rounded-2xl p-6 md:p-8 space-y-6 animate-fade-in">
               <div className="flex items-center gap-3 border-b border-zinc-900 pb-4">
                 <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                   <FiSettings className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-md font-bold text-white uppercase tracking-wider">Redes Sociais & Contatos</h3>
-                  <p className="text-xs text-zinc-500">Ajuste os links de redes sociais e popup promocional.</p>
+                  <h3 className="text-md font-bold text-white uppercase tracking-wider">Configurações dos canais</h3>
+                  <p className="text-xs text-zinc-500">Ative e edite os links das suas redes sociais.</p>
                 </div>
               </div>
 
               <div className="space-y-5">
+                <div className="admin-social-item rounded-xl p-4">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-green-600 text-white"><FaWhatsapp size={24} /></span>
+                    <div className="min-w-[9rem] flex-1"><p className="text-sm font-bold text-white">WhatsApp</p><p className="text-xs text-zinc-300">Botão no cabeçalho e contato</p></div>
+                    <span className={`admin-social-status ${headerAtivo ? "admin-social-status--active" : "admin-social-status--inactive"}`}>{headerAtivo ? "Ativo" : "Inativo"}</span>
+                    <label className="admin-channel-switch"><input type="checkbox" checked={headerAtivo} onChange={(event) => setHeaderAtivo(event.target.checked)} aria-label="Exibir WhatsApp no cabeçalho" /><span /></label>
+                    <button type="button" aria-expanded={canalEditando === "whatsapp"} onClick={() => setCanalEditando(canalEditando === "whatsapp" ? null : "whatsapp")} className="admin-social-edit rounded-lg px-3 py-2 text-xs font-semibold">Editar</button>
+                  </div>
+                  {canalEditando === "whatsapp" && <div className="mt-4 space-y-4">
                 {/* WhatsApp */}
                 <div>
                   <label className="block mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
@@ -1771,31 +1821,33 @@ export default function AdminPage() {
                   <ToggleField label="Exibir CTA inferior" checked={ctaAtivo} onChange={setCtaAtivo} />
                 </div>
 
-                <div className="space-y-3 border-t border-zinc-900 pt-5">
+                  </div>}
+                </div>
+
+                <div className="space-y-3 pt-1">
                   <div>
                     <h4 className="text-xs font-black uppercase tracking-wider text-white">Redes sociais do header</h4>
-                    <p className="mt-1 text-[10px] text-zinc-500">Instagram, Telegram e TikTok aparecem de forma discreta antes do WhatsApp.</p>
+                    <p className="mt-1 text-xs text-zinc-300">Instagram, Telegram e TikTok aparecem de forma discreta antes do WhatsApp.</p>
                   </div>
                   {EDITABLE_SOCIAL_IDS.map((id) => {
                     const item = socialNav.find((socialItem) => socialItem.id === id);
                     if (!item) return null;
-                    return (
-                      <div key={id} className="space-y-3 rounded-xl border border-zinc-800 bg-zinc-950/55 p-4">
-                        <div>
-                          <div>
-                            <label className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-zinc-500">Label</label>
-                            <input value={item.label} onChange={(event) => atualizarItemSocial(id, { label: event.target.value })} className="h-10 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 text-sm text-white focus:border-emerald-500/50 focus:outline-none" />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-zinc-500">URL</label>
-                          <input type="url" value={item.url} onChange={(event) => atualizarItemSocial(id, { url: event.target.value })} placeholder="https://..." className="h-10 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 text-sm text-white placeholder-zinc-700 focus:border-emerald-500/50 focus:outline-none" />
-                        </div>
-                        <div>
-                          <ToggleField label="Ativo" checked={item.enabled} onChange={(enabled) => atualizarItemSocial(id, { enabled })} />
-                        </div>
+                    const Icon = id === "instagram" ? FaInstagram : id === "telegram" ? FaTelegramPlane : FaTiktok;
+                    const name = id === "instagram" ? "Instagram" : id === "telegram" ? "Telegram" : "TikTok";
+                    const iconClass = id === "instagram" ? "admin-channel-instagram" : id === "telegram" ? "admin-channel-telegram" : "admin-channel-tiktok";
+                    return <div key={id} className="admin-social-item rounded-xl p-4">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className={`admin-channel-icon ${iconClass}`}><Icon size={22} /></span>
+                        <div className="min-w-[9rem] flex-1"><p className="text-sm font-bold text-white">{name}</p><p className="truncate text-xs text-zinc-300">{item.url || "Link não configurado"}</p></div>
+                        <span className={`admin-social-status ${item.enabled ? "admin-social-status--active" : "admin-social-status--inactive"}`}>{item.enabled ? "Ativo" : "Inativo"}</span>
+                        <label className="admin-channel-switch"><input type="checkbox" checked={item.enabled} onChange={(event) => atualizarItemSocial(id, { enabled: event.target.checked })} aria-label={`Ativar ${name}`} /><span /></label>
+                        <button type="button" aria-expanded={canalEditando === id} onClick={() => setCanalEditando(canalEditando === id ? null : id)} className="admin-social-edit rounded-lg px-3 py-2 text-xs font-semibold">Editar</button>
                       </div>
-                    );
+                      {canalEditando === id && <div className="mt-4 space-y-3">
+                        <div><label className="mb-1.5 block text-xs font-bold text-zinc-300">Nome de exibição</label><input value={item.label} onChange={(event) => atualizarItemSocial(id, { label: event.target.value })} className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 text-sm text-white" /></div>
+                        <div><label className="mb-1.5 block text-xs font-bold text-zinc-300">URL</label><input type="url" value={item.url} onChange={(event) => atualizarItemSocial(id, { url: event.target.value })} placeholder="https://..." className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 text-sm text-white" /></div>
+                      </div>}
+                    </div>;
                   })}
                   <div className="rounded-xl border border-zinc-800 bg-[#050806] p-3 [--tenant-primary:#16A34A] [--tenant-surface:#101512]">
                     <p className="mb-3 text-[10px] font-black uppercase tracking-wider text-zinc-500">Preview</p>
@@ -1807,12 +1859,14 @@ export default function AdminPage() {
                 </div>
 
                 {/* Popup Link */}
-                <div>
+                <details className="admin-social-item rounded-xl p-4">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-bold text-white"><span>Popup promocional</span><span className="admin-social-edit rounded-lg px-3 py-2 text-xs font-semibold">Editar</span></summary>
+                <div className="mt-4">
                   <label className="block mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
                     <FiGlobe className="text-amber-400" /> Link do Popup Promocional
                   </label>
                   <div className="relative">
-                    <FiGlobe className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-550 w-4.5 h-4.5" />
+                    <FiGlobe className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 w-4.5 h-4.5" />
                     <input
                       value={popupLink}
                       onChange={(e) => setPopupLink(e.target.value)}
@@ -1821,6 +1875,8 @@ export default function AdminPage() {
                     />
                   </div>
                 </div>
+
+                </details>
 
                 <button
                   onClick={salvar}
@@ -1848,7 +1904,7 @@ export default function AdminPage() {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Branding Identidade Visual Card */}
-                <div className="bg-zinc-900/30 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-6 space-y-5">
+                <div className="admin-surface rounded-2xl p-6 space-y-5">
                   <h4 className="font-bold text-white text-sm border-b border-zinc-900 pb-2">Identidade Visual da Marca</h4>
 
                   {/* Nome do site */}
@@ -1939,7 +1995,7 @@ export default function AdminPage() {
                 </div>
 
                 {/* Homepage Layout settings */}
-                <div className="bg-zinc-900/30 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-6 space-y-5">
+                <div className="admin-surface rounded-2xl p-6 space-y-5">
                   <h4 className="font-bold text-white text-sm border-b border-zinc-900 pb-2">Conteúdo de Exibição na Homepage</h4>
 
                   {/* Título Home */}
@@ -2012,7 +2068,7 @@ export default function AdminPage() {
           {activeTab === "sections" && (
             <div className="mx-auto max-w-3xl space-y-6 animate-fade-in">
               <div className="flex items-center gap-3 border-b border-zinc-900 pb-4"><div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-2.5 text-emerald-400"><FiGrid className="h-5 w-5" /></div><div><h3 className="text-md font-bold uppercase tracking-wider text-white">Seções do site</h3><p className="text-xs text-zinc-500">Controle visibilidade e ordem da página pública V2.</p></div></div>
-              <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/30">
+              <div className="admin-surface overflow-hidden rounded-2xl">
                 {siteSections.map((section, index) => (
                   <div key={section.id} className="flex items-center gap-4 border-b border-zinc-800/80 px-5 py-4 last:border-0">
                     <span className="w-7 text-center text-xs font-black text-zinc-600">{index + 1}</span>
